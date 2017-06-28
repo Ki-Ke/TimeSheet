@@ -18,10 +18,11 @@
 const App = require('actions-on-google').ApiAiApp;
 const functions = require('firebase-functions');
 const firebase = require('firebase-admin');
+const moment = require('moment');
 
 firebase.initializeApp({
     credential: firebase.credential.applicationDefault(),
-    databaseURL: "https://timesheet-2e733.firebaseio.com"
+    databaseURL: "https://timesheet-81c18.firebaseio.com"
 });
 const db = firebase.database();
 
@@ -30,12 +31,14 @@ const WELCOME_INTENT = 'input.welcome';
 const CREATE_PROJECT = 'input.createProject';
 const PROJECT_NAME_CONFIRMATION_YES = 'input.projectNameConfirmationYes';
 const PROJECT_NAME_CONFIRMATION_NO = 'input.projectNameConfirmationNo';
+const CHECK_IN_INTENT = 'input.checkIn';
 
 // Time Sheet constants
 const appName = 'Time Sheet';
 
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new App({ request, response });
+    const userId = app.getUser().userId;
 
     function welcome() {
         app.ask(`Welcome to ${appName}!, Get started by creating a team or project. 
@@ -58,10 +61,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function projectNameConfirmationYes(app) {
         const projectName = app.getArgument('projectName');
-        const userId = app.getUser().userId;
 
         let user = db.ref('users/' + userId);
-        let promise = user.set({userId: userId});
+        let promise = user.set({userId: userId, checkInStatus: false});
 
         let userProjects = db.ref('projects/' + userId);
 
@@ -87,6 +89,34 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         app.tell(`That's okay. Let's not do it now.`);
     }
 
+    function checkInProject(app) {
+        const projectName = app.getArgument('projectName');
+
+        let userProjects = db.ref('projects/' + userId);
+
+        userProjects.once("value")
+            .then(function(snapshot) {
+                let projectNameExists = false;
+                snapshot.forEach((childSnapshot) => {
+                    if (childSnapshot.val() === projectName){
+                        projectNameExists = true;
+                    }
+                });
+
+                if (projectNameExists){
+                    let user = db.ref('users/' + userId);
+                    user.update({checkInStatus: true});
+                    let date = moment().format('DD-MM-YYYY');
+                    let userLogs = db.ref('logs/' + userId + '/' + date);
+                    userLogs.set({projectName: projectName, checkInTime: new Date().getTime()});
+
+                    app.tell(`Great! You have been successfully checked in for ${projectName}.`);
+                } else {
+                    app.ask(`oops it looks there is no project with the name ${projectName}. Would like to create the project`);
+                }
+            });
+    }
+
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
@@ -95,6 +125,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     actionMap.set(CREATE_PROJECT, createProject);
     actionMap.set(PROJECT_NAME_CONFIRMATION_YES, projectNameConfirmationYes);
     actionMap.set(PROJECT_NAME_CONFIRMATION_NO, projectNameConfirmationNo);
+
+    // Check in a project
+    actionMap.set(CHECK_IN_INTENT, checkInProject);
 
     app.handleRequest(actionMap);
 });

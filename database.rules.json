@@ -1,6 +1,11 @@
 {
   "rules": {
     ".read": "auth != null",
-    ".write": "auth != null"
+    ".write": "auth != null",
+    "logs": {
+      "$uid": {
+        ".indexOn": [".value", "checkInDate", "checkOutTime", "projectName"]
+      }
+    }
   }
 }

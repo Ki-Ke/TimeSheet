@@ -69,7 +69,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
 
                             app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
-                        } else if (duration > 480) {
+                        } else {
                             const projectName = snapshot.val().projectName;
 
                             if (snapshot.exists() && snapshot.val().checkInStatus) {
@@ -86,9 +86,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             }
 
                             app.ask(`Welcome back to ${appName}! Your previous project ${projectName}! was clocked out because of maximum 8hrs of work time. To change the default timeout say Change default timeout.`);
-                        } else {
-                            app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
                         }
+                    } else {
+                        app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
                     }
                 });
             } else {

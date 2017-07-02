@@ -38,6 +38,7 @@ const CHECK_IN_INTENT = 'input.checkIn';
 const CHECKOUT_INTENT = 'input.checkOut';
 const ALL_LOGS_INTENT = 'input.allLogs';
 const LOG_SELECTED_INTENT = 'input.logSelected';
+const DEFAULT_CHECKOUT_TIME_INTENT = 'input.defaultCheckoutTime';
 
 // Time Sheet constants
 const appName = 'Time Sheet';
@@ -56,17 +57,43 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 let userCheckIn = db.ref('checkIn/' + userId);
 
                 userCheckIn.once('value').then((snapshot) => {
-                    if (snapshot.exists() && snapshot.val().checkInStatus) {
+
+                    let userCheckInTime = moment(snapshot.val().checkInTime);
+                    let currentTime = moment(new Date);
+                    let duration = userCheckInTime.diff(currentTime, 'minutes');
+
+                    if (snapshot.exists() && snapshot.val().checkInStatus && duration < 480) {
                         const projectName = snapshot.val().projectName;
                         const checkInTime = snapshot.val().checkInTime;
                         const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
 
                         app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
+                    } else if(snapshot.exists() && snapshot.val().checkInStatus && duration > 480){
+                        const projectName = snapshot.val().projectName;
+
+                        if (snapshot.exists() && snapshot.val().checkInStatus) {
+                            let userLogs = db.ref('logs/' + userId);
+
+                            userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
+                                const checkOutTime = new Date().getTime();
+                                logSnapshot.forEach((childSnapshot) => {
+                                    userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                                });
+
+                                userCheckIn.update({checkInStatus: false});
+                            });
+                        }
+
+                        app.ask(`Welcome back to ${appName}! Your previous project ${projectName}! was clocked out because of maximum 8hrs of work time. To change the default timeout say Change default timeout.`);
                     } else {
                         app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
                     }
                 });
             } else {
+
+                let user = db.ref('users/' + userId);
+                let promise = user.set({userId: userId, defaultCheckOutTime: 480});
+
                 app.ask(`Welcome to ${appName}!, Get started by creating a project. 
                 Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
             }
@@ -88,9 +115,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function projectNameConfirmationYes() {
         const projectName = app.getArgument('projectName');
-
-        let user = db.ref('users/' + userId);
-        let promise = user.set({userId: userId});
 
         let userProjects = db.ref('projects/' + userId);
 
@@ -160,11 +184,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 let userLogs = db.ref('logs/' + userId);
 
                 userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
-                    console.log(logSnapshot.numChildren());
                     let projectName;
                     logSnapshot.forEach((childSnapshot) => {
                         userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
-                        console.log(childSnapshot.val());
                         projectName = childSnapshot.val().projectName;
                     });
 
@@ -242,6 +264,27 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         }
     }
 
+    /**
+     * Changing the user's default timeout
+     * Ask user for the newDefaultTime
+     */
+
+    function changeDefaultTimeOut() {
+        let user = db.ref('users/' + userId);
+
+        const newDefaultTime = app.getArgument('newDefaultTime');
+
+        if (newDefaultTime && (newDefaultTime * 60) > 0){
+            let minutes = parseInt(newDefaultTime) *  60;
+            let promise = user.set({userId: userId, defaultCheckOutTime: minutes});
+            console.log(minutes);
+
+            app.tell(`Done. The default checkout time as been updated to ${newDefaultTime} hours`);
+        } else {
+            app.tell(`Please say set the default time out to 8 hours or set timeout to 10 hours`);
+        }
+    }
+
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
@@ -256,6 +299,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // Check out a project
     actionMap.set(CHECKOUT_INTENT, checkOutProject);
+
+    // Change default timeout
+    actionMap.set(DEFAULT_CHECKOUT_TIME_INTENT, changeDefaultTimeOut);
 
     // Display all logs
     actionMap.set(ALL_LOGS_INTENT, allLogs);

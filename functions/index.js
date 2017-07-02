@@ -294,15 +294,18 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     function listProjects() {
         let userProjects = db.ref('projects/' + userId);
 
-        userProjects.orderByChild('projectName').limitToFirst(30).once('value').then((projectSnapshot) => {
+        userProjects.orderByChild('createdAt').limitToFirst(30).once('value').then((projectSnapshot) => {
             let items = [];
             let index = 0;
+            console.log(projectSnapshot.numChildren());
             projectSnapshot.forEach((childProjectSnapshot) => {
                 index++;
                 let title = index + '. ' + childProjectSnapshot.val().projectName;
+                let description = childProjectSnapshot.val().description;
 
                 items.push(app.buildOptionItem(childProjectSnapshot.key)
                     .setTitle(title)
+                    .setDescription(`${description}`)
                     .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
                 )
             });

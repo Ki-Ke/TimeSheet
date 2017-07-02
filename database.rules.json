@@ -6,6 +6,11 @@
       "$uid": {
         ".indexOn": [".value", "checkInDate", "checkOutTime", "projectName"]
       }
+    },
+    "projects": {
+      "$uid": {
+        ".indexOn": [".value", "projectName"]
+      }
     }
   }
 }

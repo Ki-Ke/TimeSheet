@@ -39,6 +39,7 @@ const CHECKOUT_INTENT = 'input.checkOut';
 const ALL_LOGS_INTENT = 'input.allLogs';
 const LOG_SELECTED_INTENT = 'input.logSelected';
 const DEFAULT_CHECKOUT_TIME_INTENT = 'input.defaultCheckoutTime';
+const LIST_PROJECTS_INTENT = 'input.listProjects';
 
 // Time Sheet constants
 const appName = 'Time Sheet';
@@ -287,6 +288,36 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         }
     }
 
+    function listProjects() {
+        let userProjects = db.ref('projects/' + userId);
+
+        userProjects.orderByChild('projectName').limitToFirst(30).once('value').then((projectSnapshot) => {
+            let items = [];
+            let index = 0;
+            projectSnapshot.forEach((childProjectSnapshot) => {
+                index++;
+                let title = index + '. ' + childProjectSnapshot.val().projectName;
+
+                items.push(app.buildOptionItem(childProjectSnapshot.key)
+                    .setTitle(title)
+                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                )
+            });
+
+            if (items.length > 0) {
+                app.askWithList(app.buildRichResponse()
+                        .addSimpleResponse(`Here you go! You have created ${items.length} projects`)
+                        .addSuggestions(
+                            ['Create a project', 'Log me in']),
+                    app.buildList('Project lists')
+                        .addItems(items)
+                );
+            } else {
+                app.tell(" You don't have any projects yet. Start creating projects by saying 'Create a project!' ")
+            }
+        });
+    }
+
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
@@ -304,6 +335,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // Change default timeout
     actionMap.set(DEFAULT_CHECKOUT_TIME_INTENT, changeDefaultTimeOut);
+
+    // List projects
+    actionMap.set(LIST_PROJECTS_INTENT, listProjects);
 
     // Display all logs
     actionMap.set(ALL_LOGS_INTENT, allLogs);

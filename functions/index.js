@@ -58,35 +58,37 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                 userCheckIn.once('value').then((snapshot) => {
 
-                    let userCheckInTime = moment(snapshot.val().checkInTime);
-                    let currentTime = moment(new Date);
-                    let duration = userCheckInTime.diff(currentTime, 'minutes');
+                    if (snapshot.exists() && snapshot.val().checkInStatus) {
+                        let userCheckInTime = moment(snapshot.val().checkInTime);
+                        let currentTime = moment(new Date);
+                        let duration = userCheckInTime.diff(currentTime, 'minutes');
 
-                    if (snapshot.exists() && snapshot.val().checkInStatus && duration < 480) {
-                        const projectName = snapshot.val().projectName;
-                        const checkInTime = snapshot.val().checkInTime;
-                        const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
+                        if (duration < 480) {
+                            const projectName = snapshot.val().projectName;
+                            const checkInTime = snapshot.val().checkInTime;
+                            const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
 
-                        app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
-                    } else if(snapshot.exists() && snapshot.val().checkInStatus && duration > 480){
-                        const projectName = snapshot.val().projectName;
+                            app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
+                        } else if (duration > 480) {
+                            const projectName = snapshot.val().projectName;
 
-                        if (snapshot.exists() && snapshot.val().checkInStatus) {
-                            let userLogs = db.ref('logs/' + userId);
+                            if (snapshot.exists() && snapshot.val().checkInStatus) {
+                                let userLogs = db.ref('logs/' + userId);
 
-                            userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
-                                const checkOutTime = new Date().getTime();
-                                logSnapshot.forEach((childSnapshot) => {
-                                    userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                                userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
+                                    const checkOutTime = new Date().getTime();
+                                    logSnapshot.forEach((childSnapshot) => {
+                                        userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                                    });
+
+                                    userCheckIn.update({checkInStatus: false});
                                 });
+                            }
 
-                                userCheckIn.update({checkInStatus: false});
-                            });
+                            app.ask(`Welcome back to ${appName}! Your previous project ${projectName}! was clocked out because of maximum 8hrs of work time. To change the default timeout say Change default timeout.`);
+                        } else {
+                            app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
                         }
-
-                        app.ask(`Welcome back to ${appName}! Your previous project ${projectName}! was clocked out because of maximum 8hrs of work time. To change the default timeout say Change default timeout.`);
-                    } else {
-                        app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
                     }
                 });
             } else {
@@ -242,7 +244,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         let userLogs = db.ref('logs/' + userId);
         const logKey = app.getSelectedOption();
 
-        if (logKey){
+        if (logKey) {
             userLogs.child(logKey).once('value').then((logSnapshot) => {
                 app.ask(app.buildRichResponse()
                     .addSimpleResponse('This is the first simple response for a basic card')
@@ -274,8 +276,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         const newDefaultTime = app.getArgument('newDefaultTime');
 
-        if (newDefaultTime && (newDefaultTime * 60) > 0){
-            let minutes = parseInt(newDefaultTime) *  60;
+        if (newDefaultTime && (newDefaultTime * 60) > 0) {
+            let minutes = parseInt(newDefaultTime) * 60;
             let promise = user.set({userId: userId, defaultCheckOutTime: minutes});
             console.log(minutes);
 

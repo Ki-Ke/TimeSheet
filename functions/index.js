@@ -117,13 +117,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function projectNameConfirmationYes() {
         const projectName = app.getArgument('projectName');
+        const description = app.getArgument('description');
 
         let userProjects = db.ref('projects/' + userId);
 
-        userProjects.once('value').then((snapshot) => {
+        userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
             let projectNameExists = false;
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val() === projectName) {
+                if (childSnapshot.val().projectName.equal(projectName)) {
                     projectNameExists = true;
                 }
             });
@@ -131,8 +132,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             if (projectNameExists) {
                 app.tell(`Project name already exists`);
             } else {
-                userProjects.push(projectName);
-                app.tell(`Great! The project has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
+                userProjects.push({projectName: projectName, description: description, createdAt: new Date().getTime()});
+                app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
             }
         });
     }
@@ -143,13 +144,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function checkInProject() {
         const projectName = app.getArgument('projectName');
+        const description = app.getArgument('description');
 
         let userProjects = db.ref('projects/' + userId);
 
-        userProjects.once("value").then((snapshot) => {
+        userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
             let projectNameExists = false;
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val() === projectName) {
+                if (childSnapshot.val().projectName.equal(projectName)) {
                     projectNameExists = true;
                 }
             });
@@ -167,6 +169,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     projectName: projectName,
                     checkInDate: date,
                     checkInTime: checkInTime,
+                    description: description,
                     checkOutTime: ""
                 });
 

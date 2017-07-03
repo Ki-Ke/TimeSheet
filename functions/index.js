@@ -297,7 +297,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdAt').limitToFirst(30).once('value').then((projectSnapshot) => {
             let items = [];
             let index = 0;
-            console.log(projectSnapshot.numChildren());
             projectSnapshot.forEach((childProjectSnapshot) => {
                 index++;
                 let title = index + '. ' + childProjectSnapshot.val().projectName;

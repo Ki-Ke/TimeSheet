@@ -159,7 +159,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         userCheckIn.once('value').then((snapshot) => {
             if (snapshot.val().checkInStatus) {
-                app.tell(`O oh. Your are currently clocked in for ${projectName}. if you would like to switch just say "Switch to project name"`);
+                let oldProjectName = snapshot.val().projectName;
+                app.tell(`aiyoo. Your are currently clocked in for ${oldProjectName}. if you would like to switch just say "Switch to project name"`);
             } else {
                 let userProjects = db.ref('projects/' + userId);
 

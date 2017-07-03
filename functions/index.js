@@ -133,7 +133,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             if (projectNameExists) {
                 app.tell(`Project name already exists`);
             } else {
-                userProjects.push({projectName: projectName, description: description, createdAt: new Date().getTime()});
+                userProjects.push({
+                    projectName: projectName,
+                    description: description,
+                    createdAt: new Date().getTime()
+                });
                 app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
             }
         });
@@ -155,7 +159,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
 
             // if user have not created any projects yet
-            if (snapshot.numChildren <= 0){
+            if (snapshot.numChildren <= 0) {
                 app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
                 return;
             }
@@ -232,33 +236,42 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         if (projectName) {
 
-            userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
-                let items = [];
-                let index = 0;
-                logSnapshot.forEach((childLogSnapshot) => {
-                    index++;
-                    let title = index + '. ' + childLogSnapshot.val().projectName;
-                    const checkInTime = childLogSnapshot.val().checkInTime;
-                    const checkOutTime = childLogSnapshot.val().checkOutTime;
-                    const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
+            let userProjects = db.ref('projects/' + userId);
+            userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((projectSnapshot) => {
+                // if project name exists
+                if (projectSnapshot.exists()) {
+                    userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
+                        let items = [];
+                        let index = 0;
+                        logSnapshot.forEach((childLogSnapshot) => {
+                            index++;
+                            let title = index + '. ' + childLogSnapshot.val().projectName;
+                            const checkInTime = childLogSnapshot.val().checkInTime;
+                            const checkOutTime = childLogSnapshot.val().checkOutTime;
+                            const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
 
-                    items.push(app.buildOptionItem(childLogSnapshot.key)
-                        .setTitle(title)
-                        .setDescription(`Your work time for the project is ${timeToTTS}`)
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                    )
-                });
+                            items.push(app.buildOptionItem(childLogSnapshot.key)
+                                .setTitle(title)
+                                .setDescription(`Your work time for the project is ${timeToTTS}`)
+                                .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                            )
+                        });
 
-                if (items.length > 0) {
-                    app.askWithList(app.buildRichResponse()
-                            .addSimpleResponse(`Here you go! You have ${items.length} logs available for ${projectName}`)
-                            .addSuggestions(
-                                ['Create a project', 'List']),
-                        app.buildList('All project list')
-                            .addItems(items)
-                    );
+                        if (items.length > 0) {
+                            app.askWithList(app.buildRichResponse()
+                                    .addSimpleResponse(`Here you go! You have ${items.length} logs available for ${projectName}`)
+                                    .addSuggestions(
+                                        ['Create a project', 'List']),
+                                app.buildList('All project list')
+                                    .addItems(items)
+                            );
+                        } else {
+                            app.tell(`Sorry! You don't have any logs for the project name ${projectName}. Just say "log me in for ${projectName}" to get started!`)
+                        }
+                    });
+
                 } else {
-                    app.tell(" Empty List ")
+                    app.tell(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
                 }
             });
 
@@ -290,7 +303,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .addItems(items)
                     );
                 } else {
-                    app.tell(" Empty List ")
+                    app.tell(`Sorry! You don't have any logs recorded yet. Get started by saying "log me in for project name"!`)
                 }
             });
 

@@ -125,7 +125,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
             let projectNameExists = false;
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().projectName.equal(projectName)) {
+                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
                     projectNameExists = true;
                 }
             });
@@ -143,6 +143,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         app.tell(`That's okay. Let's not do it now.`);
     }
 
+    /**
+     * User Project Check in
+     */
     function checkInProject() {
         const projectName = app.getArgument('projectName');
         const description = app.getArgument('description');
@@ -150,9 +153,16 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         let userProjects = db.ref('projects/' + userId);
 
         userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
+
+            // if user have not created any projects yet
+            if (snapshot.numChildren <= 0){
+                app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                return;
+            }
+
             let projectNameExists = false;
             snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().projectName.equal(projectName)) {
+                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
                     projectNameExists = true;
                 }
             });
@@ -176,11 +186,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                 app.tell(`Great! You have been successfully checked in for ${projectName}.`);
             } else {
-                app.ask(`oops! it looks like there is no project with the name ${projectName}. Would you like to create the project?`);
+                app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
             }
         });
     }
 
+    /**
+     * User Project Checkout
+     */
     function checkOutProject() {
         const checkOutTime = new Date().getTime();
         let userCheckIn = db.ref('checkIn/' + userId);
@@ -210,40 +223,83 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         });
     }
 
+    /**
+     * List the first 30 user logs
+     */
     function allLogs() {
+        const projectName = app.getArgument('projectName');
         let userLogs = db.ref('logs/' + userId);
 
-        userLogs.orderByChild('checkInDate').limitToFirst(30).once('value').then((logSnapshot) => {
-            let items = [];
-            let index = 0;
-            logSnapshot.forEach((childLogSnapshot) => {
-                index++;
-                let title = index + '. ' + childLogSnapshot.val().projectName;
-                const checkInTime = childLogSnapshot.val().checkInTime;
-                const checkOutTime = childLogSnapshot.val().checkOutTime;
-                const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
+        if (projectName) {
 
-                items.push(app.buildOptionItem(childLogSnapshot.key)
-                    .setTitle(title)
-                    .setDescription(`Your work time for the project is ${timeToTTS}`)
-                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                )
+            userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
+                let items = [];
+                let index = 0;
+                logSnapshot.forEach((childLogSnapshot) => {
+                    index++;
+                    let title = index + '. ' + childLogSnapshot.val().projectName;
+                    const checkInTime = childLogSnapshot.val().checkInTime;
+                    const checkOutTime = childLogSnapshot.val().checkOutTime;
+                    const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
+
+                    items.push(app.buildOptionItem(childLogSnapshot.key)
+                        .setTitle(title)
+                        .setDescription(`Your work time for the project is ${timeToTTS}`)
+                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                    )
+                });
+
+                if (items.length > 0) {
+                    app.askWithList(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have ${items.length} logs available for ${projectName}`)
+                            .addSuggestions(
+                                ['Create a project', 'List']),
+                        app.buildList('All project list')
+                            .addItems(items)
+                    );
+                } else {
+                    app.tell(" Empty List ")
+                }
             });
 
-            if (items.length > 0) {
-                app.askWithList(app.buildRichResponse()
-                        .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
-                        .addSuggestions(
-                            ['Create a project', 'List']),
-                    app.buildList('All project list')
-                        .addItems(items)
-                );
-            } else {
-                app.tell(" Empty List ")
-            }
-        });
+        } else {
+
+            userLogs.orderByChild('checkInDate').limitToFirst(30).once('value').then((logSnapshot) => {
+                let items = [];
+                let index = 0;
+                logSnapshot.forEach((childLogSnapshot) => {
+                    index++;
+                    let title = index + '. ' + childLogSnapshot.val().projectName;
+                    const checkInTime = childLogSnapshot.val().checkInTime;
+                    const checkOutTime = childLogSnapshot.val().checkOutTime;
+                    const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
+
+                    items.push(app.buildOptionItem(childLogSnapshot.key)
+                        .setTitle(title)
+                        .setDescription(`Your work time for the project is ${timeToTTS}`)
+                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                    )
+                });
+
+                if (items.length > 0) {
+                    app.askWithList(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
+                            .addSuggestions(
+                                ['Create a project', 'List']),
+                        app.buildList('All project list')
+                            .addItems(items)
+                    );
+                } else {
+                    app.tell(" Empty List ")
+                }
+            });
+
+        }
     }
 
+    /**
+     * Handle user Selected a log
+     */
     function logSelected() {
         let userLogs = db.ref('logs/' + userId);
         const logKey = app.getSelectedOption();
@@ -274,7 +330,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      * Changing the user's default timeout
      * Ask user for the newDefaultTime
      */
-
     function changeDefaultTimeOut() {
         let user = db.ref('users/' + userId);
 
@@ -291,6 +346,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         }
     }
 
+    /**
+     * List the first 30 user projects
+     */
     function listProjects() {
         let userProjects = db.ref('projects/' + userId);
 

@@ -40,6 +40,7 @@ const ALL_LOGS_INTENT = 'input.allLogs';
 const LOG_SELECTED_INTENT = 'input.logSelected';
 const DEFAULT_CHECKOUT_TIME_INTENT = 'input.defaultCheckoutTime';
 const LIST_PROJECTS_INTENT = 'input.listProjects';
+const SWITCH_PROJECT_INTENT = 'input.switchProject';
 
 // Time Sheet constants
 const appName = 'Time Sheet';
@@ -133,7 +134,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             if (projectNameExists) {
                 app.tell(`Project name already exists`);
             } else {
-                userProjects.push({projectName: projectName, description: description, createdAt: new Date().getTime()});
+                userProjects.push({
+                    projectName: projectName,
+                    description: description,
+                    createdAt: new Date().getTime()
+                });
                 app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
             }
         });
@@ -150,43 +155,51 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         const projectName = app.getArgument('projectName');
         const description = app.getArgument('description');
 
-        let userProjects = db.ref('projects/' + userId);
+        let userCheckIn = db.ref('checkIn/' + userId);
 
-        userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
-
-            // if user have not created any projects yet
-            if (snapshot.numChildren <= 0){
-                app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
-                return;
-            }
-
-            let projectNameExists = false;
-            snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
-                    projectNameExists = true;
-                }
-            });
-
-            if (projectNameExists) {
-
-                const checkInTime = new Date().getTime();
-
-                let date = moment().format('DD-MM-YYYY');
-                let userLogs = db.ref('logs/' + userId);
-                let userCheckIn = db.ref('checkIn/' + userId);
-
-                userCheckIn.set({projectName: projectName, checkInTime: checkInTime, checkInStatus: true});
-                userLogs.push({
-                    projectName: projectName,
-                    checkInDate: date,
-                    checkInTime: checkInTime,
-                    description: description,
-                    checkOutTime: ""
-                });
-
-                app.tell(`Great! You have been successfully checked in for ${projectName}.`);
+        userCheckIn.once('value').then((snapshot) => {
+            if (snapshot.val().checkInStatus) {
+                app.tell(`O oh. Your are currently clocked in for ${projectName}. if you would like to switch just say "Switch to project name"`);
             } else {
-                app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
+                let userProjects = db.ref('projects/' + userId);
+
+                userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
+
+                    // if user have not created any projects yet
+                    if (snapshot.numChildren <= 0) {
+                        app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                        return;
+                    }
+
+                    let projectNameExists = false;
+                    snapshot.forEach((childSnapshot) => {
+                        if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+                            projectNameExists = true;
+                        }
+                    });
+
+                    if (projectNameExists) {
+
+                        const checkInTime = new Date().getTime();
+
+                        let date = moment().format('DD-MM-YYYY');
+                        let userLogs = db.ref('logs/' + userId);
+                        let userCheckIn = db.ref('checkIn/' + userId);
+
+                        userCheckIn.set({projectName: projectName, checkInTime: checkInTime, checkInStatus: true});
+                        userLogs.push({
+                            projectName: projectName,
+                            checkInDate: date,
+                            checkInTime: checkInTime,
+                            description: description,
+                            checkOutTime: ""
+                        });
+
+                        app.tell(`Great! You have been successfully checked in for ${projectName}.`);
+                    } else {
+                        app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
+                    }
+                });
             }
         });
     }
@@ -381,6 +394,10 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         });
     }
 
+    function switchProject() {
+        console.log('Working')
+    }
+
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
@@ -401,6 +418,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // List projects
     actionMap.set(LIST_PROJECTS_INTENT, listProjects);
+
+    // Switch project
+    actionMap.set(SWITCH_PROJECT_INTENT, switchProject);
 
     // Display all logs
     actionMap.set(ALL_LOGS_INTENT, allLogs);

@@ -31,6 +31,7 @@ const db = firebase.database();
 
 // Api.ai intents
 const WELCOME_INTENT = 'input.welcome';
+const USER_PERMISSION = 'input.userPermission';
 const CREATE_PROJECT = 'input.createProject';
 const PROJECT_NAME_CONFIRMATION_YES = 'input.projectNameConfirmationYes';
 const PROJECT_NAME_CONFIRMATION_NO = 'input.projectNameConfirmationNo';
@@ -93,14 +94,29 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     }
                 });
             } else {
-
-                let user = db.ref('users/' + userId);
-                let promise = user.set({userId: userId, defaultCheckOutTime: 480});
-
-                app.ask(`Welcome to ${appName}!, Get started by creating a project. 
-                Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
+                let permission = app.SupportedPermissions.NAME;
+                app.askForPermission('To get things going', permission);
             }
         });
+
+    }
+
+    function userPermission() {
+        let user = db.ref('users/' + userId);
+        if (app.isPermissionGranted()) {
+            console.log('user Granted');
+            let displayName = app.getUserName().displayName;
+            console.log(displayName);
+            let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
+
+            app.ask(`Hi! ${displayName}, Welcome to ${appName}!, Get started by creating a project. 
+                Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
+        } else {
+            let promise = user.set({userId: userId, defaultCheckOutTime: 480});
+
+            app.ask(`Welcome to ${appName}!, Get started by creating a project. 
+                Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
+        }
     }
 
     /**
@@ -397,6 +413,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
+    actionMap.set(USER_PERMISSION, userPermission);
 
     // Creating a project
     actionMap.set(CREATE_PROJECT, createProject);

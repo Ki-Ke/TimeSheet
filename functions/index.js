@@ -56,6 +56,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         user.once('value').then((snapshot) => {
             if (snapshot.exists()) {
                 let userId = snapshot.val().userId;
+                let defaultCheckOutTime = snapshot.val().defaultCheckOutTime;
 
                 let userCheckIn = db.ref('checkIn/' + userId);
 
@@ -66,7 +67,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         let currentTime = moment(new Date);
                         let duration = userCheckInTime.diff(currentTime, 'minutes');
 
-                        if (duration < 480) {
+                        if (duration < defaultCheckOutTime) {
                             const projectName = snapshot.val().projectName;
                             const checkInTime = snapshot.val().checkInTime;
                             const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
@@ -421,7 +422,59 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     }
 
     function switchProject() {
-        console.log('Working')
+        const checkOutTime = new Date().getTime();
+        const newProjectName = app.getArgument('projectName');
+        const newDescription = app.getArgument('description');
+        let userCheckIn = db.ref('checkIn/' + userId);
+        let projectName;
+
+        userCheckIn.once('value').then((checkInSnapshot) => {
+
+            let projectNameExists = false;
+            checkInSnapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+                    projectNameExists = true;
+                }
+            });
+
+            if (checkInSnapshot.exists() && checkInSnapshot.val().checkInStatus) {
+
+                if (projectNameExists){
+
+                    let userLogs = db.ref('logs/' + userId);
+
+                    userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
+                        logSnapshot.forEach((childSnapshot) => {
+                            userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                            projectName = childSnapshot.val().projectName;
+                        });
+
+                        userCheckIn.update({checkInStatus: false});
+
+                        const checkInTime = new Date().getTime();
+
+                        let date = moment().format('DD-MM-YYYY');
+                        let userLogs = db.ref('logs/' + userId);
+
+                        userCheckIn.set({projectName: newProjectName, checkInTime: checkInTime, checkInStatus: true});
+                        userLogs.push({
+                            projectName: newProjectName,
+                            checkInDate: date,
+                            checkInTime: checkInTime,
+                            description: newDescription,
+                            checkOutTime: ""
+                        });
+
+                        app.tell(`Great! You have been successfully checked in for ${projectName}.`);
+                    });
+
+                } else {
+                    app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
+                }
+            } else {
+                app.tell(`Sorry! You are not clocked in for any project!`);
+            }
+        });
     }
 
     const actionMap = new Map();

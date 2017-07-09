@@ -21,7 +21,8 @@ const firebase = require('firebase-admin');
 
 // Third part packages
 const moment = require('moment');
-const timeToWords = require('humanize-duration');
+
+const helpers = require('./helpers');
 
 firebase.initializeApp({
     credential: firebase.credential.applicationDefault(),
@@ -70,7 +71,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         if (duration < defaultCheckOutTime) {
                             const projectName = snapshot.val().projectName;
                             const checkInTime = snapshot.val().checkInTime;
-                            const timeToTTS = timeToWords(checkInTime - new Date().getTime(), {round: true});
+                            const timeToTTS = helpers.timeToTTS(checkInTime, new Date().getTime());
 
                             app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
                         } else {
@@ -105,6 +106,10 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function userPermission() {
         let user = db.ref('users/' + userId);
+        console.log('App is permission granted '+ app.isPermissionGranted());
+        console.log(app.getUserName().displayName);
+        console.log(app.getUserName());
+        console.log(app.getUserConfirmation());
         if (app.isPermissionGranted()) {
             console.log('user Granted');
             let displayName = app.getUserName().displayName;
@@ -184,7 +189,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
 
                     // if user have not created any projects yet
-                    if (snapshot.numChildren <= 0) {
+                    if (snapshot.numChildren() <= 0) {
                         app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
                         return;
                     }
@@ -262,31 +267,49 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         let userLogs = db.ref('logs/' + userId);
 
         if (projectName) {
-
             let userProjects = db.ref('projects/' + userId);
             userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((projectSnapshot) => {
                 // if project name exists
                 if (projectSnapshot.exists()) {
                     userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
                         let items = [];
-                        let index = 0;
-                        logSnapshot.forEach((childLogSnapshot) => {
-                            index++;
-                            let title = index + '. ' + childLogSnapshot.val().projectName;
-                            const checkInTime = childLogSnapshot.val().checkInTime;
-                            const checkOutTime = childLogSnapshot.val().checkOutTime;
-                            const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
 
-                            items.push(app.buildOptionItem(childLogSnapshot.key)
-                                .setTitle(title)
-                                .setDescription(`Your work time for the project is ${timeToTTS}`)
-                                .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                            )
-                        });
+                        if (logSnapshot.numChildren() === 1) {
+                            let index = 0;
+                            let title = '';
+                            let description = '';
+                            let timeToTTS = '';
+                            logSnapshot.forEach((childLogSnapshot) => {
+                                index++;
+                                title = childLogSnapshot.val().projectName;
+                                description = childLogSnapshot.val().description;
+                                timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                            });
+                            app.ask(app.buildRichResponse()
+                                .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
+                                .addSuggestions(
+                                    ['Create a project', 'List'])
+                                .addBasicCard(app.buildBasicCard(`${description}`)
+                                    .setSubtitle(`${timeToTTS}`)
+                                    .setTitle(title)
+                                    .addButton('More', 'https://kike.co.in/')
+                                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
+                            );
+                        } else if (logSnapshot.numChildren() > 1) {
+                            let index = 0;
+                            logSnapshot.forEach((childLogSnapshot) => {
+                                index++;
+                                let title = index + '. ' + childLogSnapshot.val().projectName;
+                                const timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
-                        if (items.length > 0) {
+                                items.push(app.buildOptionItem(childLogSnapshot.key)
+                                    .setTitle(title)
+                                    .setDescription(`Your work time for the project is ${timeToTTS}`)
+                                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                                )
+                            });
                             app.askWithList(app.buildRichResponse()
-                                    .addSimpleResponse(`Here you go! You have ${items.length} logs available for ${projectName}`)
+                                    .addSimpleResponse(`Here you go! You have ${items.length} logs available for the project ${projectName}`)
                                     .addSuggestions(
                                         ['Create a project', 'List']),
                                 app.buildList('All project list')
@@ -306,22 +329,40 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
             userLogs.orderByChild('checkInDate').limitToFirst(30).once('value').then((logSnapshot) => {
                 let items = [];
-                let index = 0;
-                logSnapshot.forEach((childLogSnapshot) => {
-                    index++;
-                    let title = index + '. ' + childLogSnapshot.val().projectName;
-                    const checkInTime = childLogSnapshot.val().checkInTime;
-                    const checkOutTime = childLogSnapshot.val().checkOutTime;
-                    const timeToTTS = timeToWords(checkInTime - checkOutTime, {round: true});
 
-                    items.push(app.buildOptionItem(childLogSnapshot.key)
-                        .setTitle(title)
-                        .setDescription(`Your work time for the project is ${timeToTTS}`)
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                    )
-                });
+                if (logSnapshot.numChildren() === 1) {
+                    let title = '';
+                    let description = '';
+                    let timeToTTS = '';
+                    logSnapshot.forEach((childLogSnapshot) => {
+                        title = childLogSnapshot.val().projectName;
+                        description = childLogSnapshot.val().description;
+                        timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                    });
+                    app.ask(app.buildRichResponse()
+                        .addSimpleResponse(`Here you go! You have 1 log available`)
+                        .addSuggestions(
+                            ['Create a project', 'List'])
+                        .addBasicCard(app.buildBasicCard(`${description}`)
+                            .setSubtitle(`${timeToTTS}`)
+                            .setTitle(title)
+                            .addButton('More', 'https://kike.co.in/')
+                            .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
+                    );
+                } else if (logSnapshot.numChildren() > 1) {
+                    let index = 0;
+                    logSnapshot.forEach((childLogSnapshot) => {
+                        index++;
+                        let title = index + '. ' + childLogSnapshot.val().projectName;
+                        const timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
-                if (items.length > 0) {
+                        items.push(app.buildOptionItem(childLogSnapshot.key)
+                            .setTitle(title)
+                            .setDescription(`Your work time for the project is ${timeToTTS}`)
+                            .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                        )
+                    });
+
                     app.askWithList(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
                             .addSuggestions(
@@ -346,21 +387,19 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         if (logKey) {
             userLogs.child(logKey).once('value').then((logSnapshot) => {
+                const title = logSnapshot.val().projectName;
+                const description = logSnapshot.val().description;
+                const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+
                 app.ask(app.buildRichResponse()
-                    .addSimpleResponse('This is the first simple response for a basic card')
+                    .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
                     .addSuggestions(
-                        ['Basic Card', 'List', 'Carousel', 'Suggestions'])
-                    // Create a basic card and add it to the rich response
-                    .addBasicCard(app.buildBasicCard(`This is a basic card.  Text in a
-      basic card can include "quotes" and most other unicode characters 
-      including emoji 📱.  Basic cards also support some markdown 
-      formatting like *emphasis* or _italics_, **strong** or __bold__, 
-      and ***bold itallic*** or ___strong emphasis___ as well as other things
-      like line  \nbreaks`)
-                        .setSubtitle(logSnapshot.val().projectName)
-                        .setTitle(logSnapshot.val().projectName)
-                        .addButton('This is a button', 'https://assistant.google.com/')
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'Image alternate text'))
+                        ['Create a project', 'List'])
+                    .addBasicCard(app.buildBasicCard(`${description}`)
+                        .setSubtitle(`${timeToTTS}`)
+                        .setTitle(title)
+                        .addButton('More', 'https://kike.co.in/')
+                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
                 );
             });
         }
@@ -439,7 +478,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
             if (checkInSnapshot.exists() && checkInSnapshot.val().checkInStatus) {
 
-                if (projectNameExists){
+                if (projectNameExists) {
 
                     let userLogs = db.ref('logs/' + userId);
 

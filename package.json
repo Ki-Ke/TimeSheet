@@ -1,0 +1,30 @@
+{
+  "name": "timesheet",
+  "version": "1.0.0",
+  "description": "Time-Sheet ",
+  "main": "index.js",
+  "dependencies": {
+    "firebaseui": "^2.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ki-Ke/timesheet.git"
+  },
+  "keywords": [
+    "time",
+    "time-sheet",
+    "timesheet",
+    "work",
+    "log"
+  ],
+  "author": "Keerthi Niranjan <keerthiniranjan16@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Ki-Ke/timesheet/issues"
+  },
+  "homepage": "https://github.com/Ki-Ke/timesheet#readme"
+}

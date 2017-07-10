@@ -106,10 +106,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function userPermission() {
         let user = db.ref('users/' + userId);
-        console.log('App is permission granted '+ app.isPermissionGranted());
-        console.log(app.getUserName().displayName);
-        console.log(app.getUserName());
-        console.log(app.getUserConfirmation());
         if (app.isPermissionGranted()) {
             console.log('user Granted');
             let displayName = app.getUserName().displayName;

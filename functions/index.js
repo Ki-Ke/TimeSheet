@@ -457,41 +457,73 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     }
 
     function switchProject() {
-        const checkOutTime = new Date().getTime();
         const newProjectName = app.getArgument('projectName');
         const newDescription = app.getArgument('description');
-        let userCheckIn = db.ref('checkIn/' + userId);
-        let projectName;
+        let userProjects = db.ref('projects/' + userId);
 
-        userCheckIn.once('value').then((checkInSnapshot) => {
+        userProjects.orderByChild('createdOn').once('value').then((projectSnapshot) => {
+
+            if (projectSnapshot.numChildren() <= 0) {
+                app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                return;
+            }
 
             let projectNameExists = false;
-            checkInSnapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+            projectSnapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().projectName.toUpperCase() === newProjectName.toUpperCase()) {
                     projectNameExists = true;
                 }
             });
 
-            if (checkInSnapshot.exists() && checkInSnapshot.val().checkInStatus) {
+            if (projectNameExists) {
 
-                if (projectNameExists) {
+                let userCheckIn = db.ref('checkIn/' + userId);
 
-                    let userLogs = db.ref('logs/' + userId);
+                userCheckIn.once('value').then((checkInSnapshot) => {
 
-                    userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
-                        logSnapshot.forEach((childSnapshot) => {
-                            userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
-                            projectName = childSnapshot.val().projectName;
+                    if (checkInSnapshot.exists() && checkInSnapshot.val().checkInStatus) {
+
+                        let userLogs = db.ref('logs/' + userId);
+
+                        userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
+                            logSnapshot.forEach((childSnapshot) => {
+                                const checkOutTime = new Date().getTime();
+                                userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                            });
+
+                            userCheckIn.update({checkInStatus: false});
+
+                            const checkInTime = new Date().getTime();
+
+                            let date = moment().format('DD-MM-YYYY');
+                            let userLogs = db.ref('logs/' + userId);
+
+                            userCheckIn.set({
+                                projectName: newProjectName,
+                                checkInTime: checkInTime,
+                                checkInStatus: true
+                            });
+                            userLogs.push({
+                                projectName: newProjectName,
+                                checkInDate: date,
+                                checkInTime: checkInTime,
+                                description: newDescription,
+                                checkOutTime: ""
+                            });
+
+                            app.tell(`Great! You have been successfully checked in for ${newProjectName}.`);
                         });
-
-                        userCheckIn.update({checkInStatus: false});
-
+                    } else {
                         const checkInTime = new Date().getTime();
 
                         let date = moment().format('DD-MM-YYYY');
                         let userLogs = db.ref('logs/' + userId);
 
-                        userCheckIn.set({projectName: newProjectName, checkInTime: checkInTime, checkInStatus: true});
+                        userCheckIn.set({
+                            projectName: newProjectName,
+                            checkInTime: checkInTime,
+                            checkInStatus: true
+                        });
                         userLogs.push({
                             projectName: newProjectName,
                             checkInDate: date,
@@ -499,15 +531,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             description: newDescription,
                             checkOutTime: ""
                         });
-
-                        app.tell(`Great! You have been successfully checked in for ${projectName}.`);
-                    });
-
-                } else {
-                    app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
-                }
+                        app.tell(`Great! You have been successfully checked in for ${newProjectName}.`);
+                    }
+                });
             } else {
-                app.tell(`Sorry! You are not clocked in for any project!`);
+                app.ask(`oops! it looks like there is no project with the name ${newProjectName}. Just say "create a project" to get started!`);
             }
         });
     }

@@ -186,7 +186,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                     // if user have not created any projects yet
                     if (snapshot.numChildren() <= 0) {
-                        app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                        app.ask(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
                         return;
                     }
 
@@ -442,7 +442,39 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 )
             });
 
-            if (items.length > 0) {
+            if (projectSnapshot.numChildren() === 1) {
+                let title = '';
+                let description = '';
+                let createdOn = '';
+                projectSnapshot.forEach((childLogSnapshot) => {
+                    title = childLogSnapshot.val().projectName;
+                    description = childLogSnapshot.val().description;
+                    createdOn = new Date(childLogSnapshot.val().createdAt).toDateString();
+                });
+                app.ask(app.buildRichResponse()
+                    .addSimpleResponse(`Here you go! You have 1 project available`)
+                    .addSuggestions(
+                        ['Create a project', 'List'])
+                    .addBasicCard(app.buildBasicCard(`${description}`)
+                        .setSubtitle(`${createdOn}`)
+                        .setTitle(title)
+                        .addButton('More', 'https://kike.co.in/')
+                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
+                );
+            } else if (projectSnapshot.numChildren() > 1) {
+                let index = 0;
+                projectSnapshot.forEach((childLogSnapshot) => {
+                    index++;
+                    let title = index + '. ' + childLogSnapshot.val().projectName;
+                    let description = childLogSnapshot.description;
+
+                    items.push(app.buildOptionItem(childLogSnapshot.key)
+                        .setTitle(title)
+                        .setDescription(`${description}`)
+                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
+                    )
+                });
+
                 app.askWithList(app.buildRichResponse()
                         .addSimpleResponse(`Here you go! You have created ${items.length} projects`)
                         .addSuggestions(
@@ -464,7 +496,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdOn').once('value').then((projectSnapshot) => {
 
             if (projectSnapshot.numChildren() <= 0) {
-                app.tell(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                app.ask(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
                 return;
             }
 
@@ -484,19 +516,19 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     if (checkInSnapshot.exists() && checkInSnapshot.val().checkInStatus) {
 
                         let userLogs = db.ref('logs/' + userId);
+                        const checkOutTime = new Date().getTime();
 
                         userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
                             logSnapshot.forEach((childSnapshot) => {
-                                const checkOutTime = new Date().getTime();
                                 userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
                             });
 
+                            let oldProject = checkInSnapshot.val().projectName;
                             userCheckIn.update({checkInStatus: false});
 
                             const checkInTime = new Date().getTime();
 
                             let date = moment().format('DD-MM-YYYY');
-                            let userLogs = db.ref('logs/' + userId);
 
                             userCheckIn.set({
                                 projectName: newProjectName,
@@ -511,7 +543,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 checkOutTime: ""
                             });
 
-                            app.tell(`Great! You have been successfully checked in for ${newProjectName}.`);
+                            app.tell(`Great! You have been successfully switched from ${oldProject} to the new project ${newProjectName}.`);
                         });
                     } else {
                         const checkInTime = new Date().getTime();

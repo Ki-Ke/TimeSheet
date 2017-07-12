@@ -52,3 +52,4 @@ fabric.properties
 /functions/node_modules
 .idea
 /node_modules/
+/build/

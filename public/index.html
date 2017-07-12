@@ -5,38 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Welcome to KiKe TimeSheet</title>
 
-    <script src="../node_modules/firebaseui/dist/firebaseui.js"></script>
-    <link type="text/css" rel="stylesheet" href="../node_modules/firebaseui/dist/firebaseui.css"/>
-    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
-    <script>
-        // Initialize Firebase
-        var config = {
-            apiKey: "AIzaSyCFuaaRmmctGcQMNvX2psjvy7-6scrZmQc",
-            authDomain: "timesheet-81c18.firebaseapp.com",
-            databaseURL: "https://timesheet-81c18.firebaseio.com",
-            projectId: "timesheet-81c18",
-            storageBucket: "timesheet-81c18.appspot.com",
-            messagingSenderId: "494017438997"
-        };
-        firebase.initializeApp(config);
-    </script>
-    <script type="text/javascript">
-        // FirebaseUI config.
-        var uiConfig = {
-            signInSuccessUrl: 'home.html',
-            signInOptions: [
-                // Leave the lines as is for the providers you want to offer your users.
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID
-            ],
-            // Terms of service url.
-            tosUrl: '<your-tos-url>'
-        };
-        // Initialize the FirebaseUI Widget using Firebase.
-        var ui = new firebaseui.auth.AuthUI(firebase.auth());
-        // The start method will wait until the DOM is loaded.
-        ui.start('#firebaseui-auth-container', uiConfig);
-    </script>
-
     <style media="screen">
         body {
             background: #ECEFF1;
@@ -109,11 +77,6 @@
     </style>
 </head>
 <body>
-<div id="message">
-    <img class="logo" src="http://www.kike.co.in/images/kike_logo_home.png" alt="">
-    <h1>Welcome to TimeSheet</h1>
-    <p>Click here to sign-in and get started</p>
-    <div id="firebaseui-auth-container"></div>
-</div>
+<div id="app"></div>
 </body>
 </html>

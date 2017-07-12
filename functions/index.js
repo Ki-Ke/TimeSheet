@@ -34,8 +34,7 @@ const db = firebase.database();
 const WELCOME_INTENT = 'input.welcome';
 const USER_PERMISSION = 'input.userPermission';
 const CREATE_PROJECT = 'input.createProject';
-const PROJECT_NAME_CONFIRMATION_YES = 'input.projectNameConfirmationYes';
-const PROJECT_NAME_CONFIRMATION_NO = 'input.projectNameConfirmationNo';
+const CREATE_PROJECT_CONFIRMATION = 'input.createProjectConfirmation';
 const CHECK_IN_INTENT = 'input.checkIn';
 const CHECKOUT_INTENT = 'input.checkOut';
 const ALL_LOGS_INTENT = 'input.allLogs';
@@ -107,7 +106,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     function userPermission() {
         let user = db.ref('users/' + userId);
         if (app.isPermissionGranted()) {
-            console.log('user Granted');
             let displayName = app.getUserName().displayName;
             console.log(displayName);
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
@@ -135,35 +133,41 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         app.askForConfirmation(`Are you sure you want to create a project with the name ${projectName}?`);
     }
 
-    function projectNameConfirmationYes() {
-        const projectName = app.getArgument('projectName');
-        const description = app.getArgument('description');
+    function createProjectConfirmation() {
 
-        let userProjects = db.ref('projects/' + userId);
+        console.log("User confirmation");
+        if (app.getUserConfirmation()) {
+            console.log("user got confirmed");
+            const projectName = app.getArgument('#projectName');
+            const description = app.getArgument('$description');
 
-        userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
-            let projectNameExists = false;
-            snapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
-                    projectNameExists = true;
+            console.log(projectName);
+            console.log(description);
+
+            let userProjects = db.ref('projects/' + userId);
+
+            userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
+                let projectNameExists = false;
+                snapshot.forEach((childSnapshot) => {
+                    if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+                        projectNameExists = true;
+                    }
+                });
+
+                if (projectNameExists) {
+                    app.tell(`Project name already exists`);
+                } else {
+                    userProjects.push({
+                        projectName: projectName,
+                        description: description,
+                        createdAt: new Date().getTime()
+                    });
+                    app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
                 }
             });
-
-            if (projectNameExists) {
-                app.tell(`Project name already exists`);
-            } else {
-                userProjects.push({
-                    projectName: projectName,
-                    description: description,
-                    createdAt: new Date().getTime()
-                });
-                app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
-            }
-        });
-    }
-
-    function projectNameConfirmationNo() {
-        app.tell(`That's okay. Let's not do it now.`);
+        } else {
+            app.tell(`That's okay. Let's not do it now.`);
+        }
     }
 
     /**
@@ -579,8 +583,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // Creating a project
     actionMap.set(CREATE_PROJECT, createProject);
-    actionMap.set(PROJECT_NAME_CONFIRMATION_YES, projectNameConfirmationYes);
-    actionMap.set(PROJECT_NAME_CONFIRMATION_NO, projectNameConfirmationNo);
+    actionMap.set(CREATE_PROJECT_CONFIRMATION, createProjectConfirmation);
 
     // Check in a project
     actionMap.set(CHECK_IN_INTENT, checkInProject);

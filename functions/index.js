@@ -110,13 +110,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             console.log(displayName);
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
-            app.ask(`Hi! ${displayName}, Welcome to ${appName}!, Get started by creating a project. 
-                Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
+            app.ask(`Next ${displayName}, say "Create a Project", to create a new Project.`);
         } else {
             let promise = user.set({userId: userId, defaultCheckOutTime: 480});
 
-            app.ask(`Welcome to ${appName}!, Get started by creating a project. 
-                Just say create a project or start logging by saying '${appName} log me in for project name'`, ['create a project', 'log me in', 'help']);
+            app.ask(`No worries, say "Create a Project", to create a new Project.`);
         }
     }
 
@@ -381,17 +379,17 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         if (logKey) {
             userLogs.child(logKey).once('value').then((logSnapshot) => {
-                const title = logSnapshot.val().projectName;
+                const projectName = logSnapshot.val().projectName;
                 const description = logSnapshot.val().description;
                 const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
 
                 app.ask(app.buildRichResponse()
-                    .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
+                    .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
                     .addSuggestions(
                         ['Create a project', 'List'])
                     .addBasicCard(app.buildBasicCard(`${description}`)
                         .setSubtitle(`${timeToTTS}`)
-                        .setTitle(title)
+                        .setTitle(projectName)
                         .addButton('More', 'https://kike.co.in/')
                         .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
                 );

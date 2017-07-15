@@ -72,7 +72,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             const checkInTime = snapshot.val().checkInTime;
                             const timeToTTS = helpers.timeToTTS(checkInTime, new Date().getTime());
 
-                            app.ask(`Welcome back to ${appName}! Your are currently clocked in for ${projectName}! with the work time of ${timeToTTS}`);
+                            app.ask(`Welcome back to ${appName}! You have logged in to ${projectName} for ${timeToTTS}`);
                         } else {
                             const projectName = snapshot.val().projectName;
 
@@ -88,16 +88,16 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                     userCheckIn.update({checkInStatus: false});
                                 });
                             }
-
-                            app.ask(`Welcome back to ${appName}! Your previous project ${projectName}! was clocked out because of maximum 8hrs of work time. To change the default timeout say Change default timeout.`);
+                            app.ask(`Welcome back to ${appName}! You were checked out automatically, as you crossed the default session time of 8 hours. To change the default session time, say "Change default time".`);
                         }
                     } else {
-                        app.ask(`Welcome back to ${appName}! Start your day by saying '${appName} log me in for project name'`);
+                        app.ask(`Welcome back to ${appName}. Get started by saying "log me in"`);
                     }
+                    //TODO: Change the
                 });
             } else {
                 let permission = app.SupportedPermissions.NAME;
-                app.askForPermission('First up', permission);
+                app.askForPermission(`Welcome to ${appName}! First up`, permission);
             }
         });
 
@@ -110,7 +110,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             console.log(displayName);
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
-            app.ask(`Next ${displayName}, say "Create a Project", to create a new Project.`);
+            app.ask(`Next, ${displayName}, say "Create a Project", to create a new Project.`);
         } else {
             let promise = user.set({userId: userId, defaultCheckOutTime: 480});
 
@@ -128,7 +128,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      */
     function createProject() {
         const projectName = app.getArgument('projectName');
-        app.ask(`Are you sure you want to create a project with the name ${projectName}?`);
+        app.ask(`Creating Project - ${projectName} now, please confirm`);
     }
 
     function createProjectYes() {
@@ -147,14 +147,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 });
 
                 if (projectNameExists) {
-                    app.tell(`Project name already exists`);
+                    app.ask(`Project - ${projectName} already exists. Say, "Log me in to ${projectName}", to log in to ${projectName}, or, say "create a project"`);
                 } else {
                     userProjects.push({
                         projectName: projectName,
                         description: description,
                         createdAt: new Date().getTime()
                     });
-                    app.tell(`Great! The project ${projectName} has been created. You can start logging right away! just say, Time sheet check in for ${projectName}`);
+                    app.tell(`Great! Project - ${projectName} is now created. You can start logging in right away! just say, Time sheet check in to ${projectName}`);
                 }
             });
         } else {
@@ -174,7 +174,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userCheckIn.once('value').then((snapshot) => {
             if (snapshot.exists() && snapshot.val().checkInStatus) {
                 let oldProjectName = snapshot.val().projectName;
-                app.tell(`aiyoo. Your are currently clocked in for ${oldProjectName}. if you would like to switch just say "Switch to project name"`);
+                app.tell(`You are currently clocked in to ${oldProjectName}. Simply say, "Switch" to log in to another project.`);
             } else {
                 let userProjects = db.ref('projects/' + userId);
 
@@ -182,7 +182,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                     // if user have not created any projects yet
                     if (snapshot.numChildren() <= 0) {
-                        app.ask(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                        app.ask(`Sorry! Haven't seen you create a project. Say, "Create a project", to create a new project.`);
                         return;
                     }
 
@@ -210,9 +210,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             checkOutTime: ""
                         });
 
-                        app.tell(`Great! You have been successfully checked in for ${projectName}.`);
+                        app.tell(`Great! You have been successfully checked in to ${projectName}.`);
                     } else {
-                        app.ask(`oops! it looks like there is no project with the name ${projectName}. Just say "create a project" to get started!`);
+                        app.ask(`Oops! ${projectName} doesn't exist. Please say "create a project" to create a new one.`);
                     }
                 });
             }
@@ -240,13 +240,13 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     userCheckIn.update({checkInStatus: false});
 
                     if (projectName) {
-                        app.tell(`You have been checked out for ${projectName}. have a great day!`);
+                        app.tell(`You have been successfully checked out from ${projectName}. Cheers!`);
                     } else {
-                        app.tell(`You have been successfully checked out. have a great day!`);
+                        app.tell(`You have been successfully checked out. Cheers!`);
                     }
                 });
             } else {
-                app.tell(`Sorry! You are not clocked in for any project!`);
+                app.tell(`Sorry! you are not checked in to any project!`);
             }
         });
     }
@@ -308,7 +308,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                     .addItems(items)
                             );
                         } else {
-                            app.tell(`Sorry! You don't have any logs for the project name ${projectName}. Just say "log me in for ${projectName}" to get started!`)
+                            app.tell(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
                         }
                     });
 
@@ -363,7 +363,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .addItems(items)
                     );
                 } else {
-                    app.tell(`Sorry! You don't have any logs recorded yet. Get started by saying "log me in for project name"!`)
+                    app.tell(`Sorry! You don't have any logs recorded yet. Get started by saying "Log me in for project name"!`)
                 }
             });
 
@@ -406,14 +406,13 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         const newDefaultTime = app.getArgument('newDefaultTime');
 
-        if (newDefaultTime && (newDefaultTime * 60) > 0) {
+        // TODO: not working
+        if (typeof newDefaultTime === 'number') {
             let minutes = parseInt(newDefaultTime) * 60;
             let promise = user.set({userId: userId, defaultCheckOutTime: minutes});
             console.log(minutes);
 
-            app.tell(`Done. The default checkout time as been updated to ${newDefaultTime} hours`);
-        } else {
-            app.tell(`Please say set the default time out to 8 hours or set timeout to 10 hours`);
+            app.tell(`Done. The new default session time out is now set to ${newDefaultTime} hours.`);
         }
     }
 
@@ -492,7 +491,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdOn').once('value').then((projectSnapshot) => {
 
             if (projectSnapshot.numChildren() <= 0) {
-                app.ask(`Sorry! You don't have any project created yet. Get started by saying "create a project"`);
+                app.ask(`Sorry! Haven't seen you create a project. Say, "Create a project", to create a new project`);
                 return;
             }
 
@@ -539,7 +538,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 checkOutTime: ""
                             });
 
-                            app.tell(`Great! You have been successfully switched from ${oldProject} to the new project ${newProjectName}.`);
+                            app.tell(`Great! Switch successful. You are now clocked in to ${newProjectName}.`);
                         });
                     } else {
                         const checkInTime = new Date().getTime();
@@ -559,11 +558,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             description: newDescription,
                             checkOutTime: ""
                         });
-                        app.tell(`Great! You have been successfully checked in for ${newProjectName}.`);
+                        app.tell(`You have been successfully checked in to ${newProjectName}.`);
                     }
                 });
             } else {
-                app.ask(`oops! it looks like there is no project with the name ${newProjectName}. Just say "create a project" to get started!`);
+                app.ask(`Oops! ${newProjectName} doesn't exist. Please say "create a project" to create a new one.`);
             }
         });
     }

@@ -34,7 +34,7 @@ const db = firebase.database();
 const WELCOME_INTENT = 'input.welcome';
 const USER_PERMISSION = 'input.userPermission';
 const CREATE_PROJECT = 'input.createProject';
-const CREATE_PROJECT_CONFIRMATION = 'input.createProjectConfirmation';
+const CREATE_PROJECT_YES = 'input.createProjectYes';
 const CHECK_IN_INTENT = 'input.checkIn';
 const CHECKOUT_INTENT = 'input.checkOut';
 const ALL_LOGS_INTENT = 'input.allLogs';
@@ -130,20 +130,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      */
     function createProject() {
         const projectName = app.getArgument('projectName');
-        app.askForConfirmation(`Are you sure you want to create a project with the name ${projectName}?`);
+        app.ask(`Are you sure you want to create a project with the name ${projectName}?`);
     }
 
-    function createProjectConfirmation() {
+    function createProjectYes() {
+        const projectName = app.getArgument('projectName');
+        const description = app.getArgument('description');
 
-        console.log("User confirmation");
-        if (app.getUserConfirmation()) {
-            console.log("user got confirmed");
-            const projectName = app.getArgument('#projectName');
-            const description = app.getArgument('$description');
-
-            console.log(projectName);
-            console.log(description);
-
+        if (projectName) {
             let userProjects = db.ref('projects/' + userId);
 
             userProjects.orderByChild('createdOn').once('value').then((snapshot) => {
@@ -166,7 +160,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 }
             });
         } else {
-            app.tell(`That's okay. Let's not do it now.`);
+            app.tell('Sorry! something went wrong');
         }
     }
 
@@ -583,7 +577,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // Creating a project
     actionMap.set(CREATE_PROJECT, createProject);
-    actionMap.set(CREATE_PROJECT_CONFIRMATION, createProjectConfirmation);
+    actionMap.set(CREATE_PROJECT_YES, createProjectYes);
 
     // Check in a project
     actionMap.set(CHECK_IN_INTENT, checkInProject);

@@ -97,7 +97,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 });
             } else {
                 let permission = app.SupportedPermissions.NAME;
-                app.askForPermission('To get things going', permission);
+                app.askForPermission('First up', permission);
             }
         });
 

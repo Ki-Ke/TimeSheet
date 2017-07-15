@@ -18,6 +18,7 @@ import React from 'react';
 import firebase from 'firebase';
 import firebaseui from 'firebaseui';
 import SignIn from './SignIn';
+import HomePage from './HomePage';
 
 let config = {
     apiKey: "AIzaSyCFuaaRmmctGcQMNvX2psjvy7-6scrZmQc",
@@ -30,16 +31,19 @@ let config = {
 firebase.initializeApp(config);
 let authUi = new firebaseui.auth.AuthUI(firebase.auth());
 
+const db = firebase.database();
+
 class Main extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {isLoggedIn: false, user: {}};
+        this.state = {isLoggedIn: false, userObject: {}, userData: null};
         let _this = this;
 
         firebase.auth().onAuthStateChanged(function (user) {
             if (user) {
-                return _this.setState({isLoggedIn: true, user: user});
+                let data = db.ref('projects/APhe68Fbqk6K_XQQcbCMKdpQ-HpQ');
+                return _this.setState({isLoggedIn: true, userObject: user, userData: data});
             }
         });
     };
@@ -69,7 +73,7 @@ class Main extends React.Component {
     render() {
         let dom;
         if (this.state.isLoggedIn) {
-            dom = <div><h3>Welcome {this.state.user.displayName}</h3></div>
+            dom = <HomePage user={this.state.userData}/>
         } else {
             dom = <SignIn />
         }

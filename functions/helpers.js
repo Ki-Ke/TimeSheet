@@ -24,6 +24,16 @@ function timeToTTS(checkInTime, checkOutTime) {
     return timeToWords(checkInTime - checkOutTime, {round: true});
 }
 
+/**
+ *
+ */
+function convertMinToHrs(min) {
+    let hours = Math.trunc(min / 60);
+    let minutes = min % 60;
+    return (hours + '.' + minutes);
+}
+
 module.exports = {
-    timeToTTS
+    timeToTTS,
+    convertMinToHrs
 };

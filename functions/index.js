@@ -55,45 +55,55 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         user.once('value').then((snapshot) => {
             if (snapshot.exists()) {
-                let userId = snapshot.val().userId;
-                let defaultCheckOutTime = snapshot.val().defaultCheckOutTime;
 
-                let userCheckIn = db.ref('checkIn/' + userId);
+                let userProjects = db.ref('projects/' + userId);
+                userProjects.once('value').then((projectSnapshot) => {
+                    // Method to check if user has created any projects
+                    if (projectSnapshot.numChildren > 0) {
+                        let userId = snapshot.val().userId;
+                        let defaultCheckOutTime = snapshot.val().defaultCheckOutTime;
 
-                userCheckIn.once('value').then((snapshot) => {
+                        let userCheckIn = db.ref('checkIn/' + userId);
 
-                    if (snapshot.exists() && snapshot.val().checkInStatus) {
-                        let userCheckInTime = moment(snapshot.val().checkInTime);
-                        let currentTime = moment(new Date);
-                        let duration = userCheckInTime.diff(currentTime, 'minutes');
-
-                        if (duration < defaultCheckOutTime) {
-                            const projectName = snapshot.val().projectName;
-                            const checkInTime = snapshot.val().checkInTime;
-                            const timeToTTS = helpers.timeToTTS(checkInTime, new Date().getTime());
-
-                            app.ask(`Welcome back to ${appName}! You have logged in to ${projectName} for ${timeToTTS}`);
-                        } else {
-                            const projectName = snapshot.val().projectName;
+                        userCheckIn.once('value').then((snapshot) => {
 
                             if (snapshot.exists() && snapshot.val().checkInStatus) {
-                                let userLogs = db.ref('logs/' + userId);
+                                let userCheckInTime = moment(snapshot.val().checkInTime);
+                                let currentTime = moment(new Date);
+                                let duration = userCheckInTime.diff(currentTime, 'minutes');
 
-                                userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
-                                    const checkOutTime = new Date().getTime();
-                                    logSnapshot.forEach((childSnapshot) => {
-                                        userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
-                                    });
+                                if (duration < defaultCheckOutTime) {
+                                    const projectName = snapshot.val().projectName;
+                                    const checkInTime = snapshot.val().checkInTime;
+                                    const timeToTTS = helpers.timeToTTS(checkInTime, new Date().getTime());
 
-                                    userCheckIn.update({checkInStatus: false});
-                                });
+                                    app.ask(`Welcome back to ${appName}! You have logged in to ${projectName} for ${timeToTTS}`);
+                                } else {
+                                    const projectName = snapshot.val().projectName;
+
+                                    if (snapshot.exists() && snapshot.val().checkInStatus) {
+                                        let userLogs = db.ref('logs/' + userId);
+
+                                        userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
+                                            const checkOutTime = new Date().getTime();
+                                            logSnapshot.forEach((childSnapshot) => {
+                                                userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
+                                            });
+
+                                            userCheckIn.update({checkInStatus: false});
+                                        });
+                                    }
+                                    // Method to convert min to hrs
+                                    const hrs = helpers.convertMinToHrs(defaultCheckOutTime);
+                                    app.ask(`Welcome back to ${appName}! You were checked out automatically, as you crossed the default session time of ${hrs} hours. To change the default session time, say "Change default time".`);
+                                }
+                            } else {
+                                app.ask(`Welcome back to ${appName}. Get started by saying "log me in"`);
                             }
-                            app.ask(`Welcome back to ${appName}! You were checked out automatically, as you crossed the default session time of 8 hours. To change the default session time, say "Change default time".`);
-                        }
+                        });
                     } else {
-                        app.ask(`Welcome back to ${appName}. Get started by saying "log me in"`);
+                        app.ask(`Welcome back to ${appName}. Haven't seen you create a project. Say, "Create a project", to add a new project`);
                     }
-                    //TODO: Change the
                 });
             } else {
                 let permission = app.SupportedPermissions.NAME;

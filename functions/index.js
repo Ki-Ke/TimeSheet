@@ -65,23 +65,24 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                         let userCheckIn = db.ref('checkIn/' + userId);
 
-                        userCheckIn.once('value').then((snapshot) => {
+                        userCheckIn.once('value').then((userCheckInSnapshot) => {
 
-                            if (snapshot.exists() && snapshot.val().checkInStatus) {
-                                let userCheckInTime = moment(snapshot.val().checkInTime);
-                                let currentTime = moment(new Date);
-                                let duration = userCheckInTime.diff(currentTime, 'minutes');
+                            if (userCheckInSnapshot.exists() && userCheckInSnapshot.val().checkInStatus) {
+                                let userCheckInTime = moment(userCheckInSnapshot.val().checkInTime);
+                                let currentTime = moment(new Date().getTime());
+                                let duration = currentTime.diff(userCheckInTime, 'minutes');
+                                console.log(duration);
 
                                 if (duration < defaultCheckOutTime) {
-                                    const projectName = snapshot.val().projectName;
-                                    const checkInTime = snapshot.val().checkInTime;
+                                    const projectName = userCheckInSnapshot.val().projectName;
+                                    const checkInTime = userCheckInSnapshot.val().checkInTime;
                                     const timeToTTS = helpers.timeToTTS(checkInTime, new Date().getTime());
 
                                     app.ask(`Welcome back to ${appName}! You have logged in to ${projectName} for ${timeToTTS}`);
                                 } else {
-                                    const projectName = snapshot.val().projectName;
+                                    const projectName = userCheckInSnapshot.val().projectName;
 
-                                    if (snapshot.exists() && snapshot.val().checkInStatus) {
+                                    if (userCheckInSnapshot.exists() && userCheckInSnapshot.val().checkInStatus) {
                                         let userLogs = db.ref('logs/' + userId);
 
                                         userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {

@@ -58,7 +58,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                 let userProjects = db.ref('projects/' + userId);
                 userProjects.once('value').then((projectSnapshot) => {
-                    console.log(projectSnapshot.numChildren());
                     // Method to check if user has created any projects
                     if (projectSnapshot.numChildren() > 0) {
                         let userId = snapshot.val().userId;

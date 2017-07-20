@@ -42,7 +42,10 @@ class Main extends React.Component {
 
         firebase.auth().onAuthStateChanged(function (user) {
             if (user) {
-                let data = db.ref('projects/APhe68Fbqk6K_XQQcbCMKdpQ-HpQ');
+                firebase.auth().currentUser.getToken(true).then(function (token) {
+                    console.log(token)
+                })
+                let data = '';
                 return _this.setState({isLoggedIn: true, userObject: user, userData: data});
             }
         });

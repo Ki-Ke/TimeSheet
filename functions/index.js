@@ -164,7 +164,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         description: description,
                         createdAt: new Date().getTime()
                     });
-                    app.tell(`Great! Project - ${projectName} is now created. You can start logging in right away! just say, Time sheet check in to ${projectName}`);
+                    app.ask(`Great! Project - ${projectName} is now created. You can start logging in right away! just say, Time sheet check in to ${projectName}`);
                 }
             });
         } else {
@@ -184,7 +184,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userCheckIn.once('value').then((snapshot) => {
             if (snapshot.exists() && snapshot.val().checkInStatus) {
                 let oldProjectName = snapshot.val().projectName;
-                app.tell(`You are currently clocked in to ${oldProjectName}. Simply say, "Switch" to log in to another project.`);
+                app.ask(`You are currently clocked in to ${oldProjectName}. Simply say, "Switch" to log in to another project.`);
             } else {
                 let userProjects = db.ref('projects/' + userId);
 
@@ -285,7 +285,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 index++;
                                 title = childLogSnapshot.val().projectName;
                                 description = childLogSnapshot.val().description;
-                                timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                                timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                             });
                             app.ask(app.buildRichResponse()
                                 .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
@@ -302,8 +302,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             logSnapshot.forEach((childLogSnapshot) => {
                                 index++;
                                 let title = index + '. ' + childLogSnapshot.val().projectName;
-                                const timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
-
+                                let timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                                 items.push(app.buildOptionItem(childLogSnapshot.key)
                                     .setTitle(title)
                                     .setDescription(`Your work time for the project is ${timeToTTS}`)
@@ -318,12 +317,12 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                     .addItems(items)
                             );
                         } else {
-                            app.tell(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
+                            app.ask(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
                         }
                     });
 
                 } else {
-                    app.tell(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
+                    app.ask(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
                 }
             });
 
@@ -339,7 +338,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     logSnapshot.forEach((childLogSnapshot) => {
                         title = childLogSnapshot.val().projectName;
                         description = childLogSnapshot.val().description;
-                        timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                        timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                     });
                     app.ask(app.buildRichResponse()
                         .addSimpleResponse(`Here you go! You have 1 log available`)
@@ -356,7 +355,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     logSnapshot.forEach((childLogSnapshot) => {
                         index++;
                         let title = index + '. ' + childLogSnapshot.val().projectName;
-                        const timeToTTS = helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                        let timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
                         items.push(app.buildOptionItem(childLogSnapshot.key)
                             .setTitle(title)
@@ -416,8 +415,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         const newDefaultTime = app.getArgument('newDefaultTime');
 
-        // TODO: not working
-        if (typeof newDefaultTime === 'number') {
+        if (newDefaultTime && (newDefaultTime * 60) > 0) {
             let minutes = parseInt(newDefaultTime) * 60;
             let promise = user.set({userId: userId, defaultCheckOutTime: minutes});
             console.log(minutes);
@@ -435,17 +433,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         userProjects.orderByChild('createdAt').limitToFirst(30).once('value').then((projectSnapshot) => {
             let items = [];
             let index = 0;
-            projectSnapshot.forEach((childProjectSnapshot) => {
-                index++;
-                let title = index + '. ' + childProjectSnapshot.val().projectName;
-                let description = childProjectSnapshot.val().description;
-
-                items.push(app.buildOptionItem(childProjectSnapshot.key)
-                    .setTitle(title)
-                    .setDescription(`${description}`)
-                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                )
-            });
 
             if (projectSnapshot.numChildren() === 1) {
                 let title = '';
@@ -467,11 +454,10 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
                 );
             } else if (projectSnapshot.numChildren() > 1) {
-                let index = 0;
                 projectSnapshot.forEach((childLogSnapshot) => {
                     index++;
                     let title = index + '. ' + childLogSnapshot.val().projectName;
-                    let description = childLogSnapshot.description;
+                    let description = childLogSnapshot.val().description;
 
                     items.push(app.buildOptionItem(childLogSnapshot.key)
                         .setTitle(title)

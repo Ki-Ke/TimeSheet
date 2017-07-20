@@ -58,8 +58,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                 let userProjects = db.ref('projects/' + userId);
                 userProjects.once('value').then((projectSnapshot) => {
+                    console.log(projectSnapshot.numChildren());
                     // Method to check if user has created any projects
-                    if (projectSnapshot.numChildren > 0) {
+                    if (projectSnapshot.numChildren() > 0) {
                         let userId = snapshot.val().userId;
                         let defaultCheckOutTime = snapshot.val().defaultCheckOutTime;
 
@@ -124,7 +125,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         } else {
             let promise = user.set({userId: userId, defaultCheckOutTime: 480});
 
-            app.ask(`No worries, say "Create a Project", to create a new Project.`);
+            app.tell(`No worries, say "Create a Project", to create a new Project.`);
         }
     }
 

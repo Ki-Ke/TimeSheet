@@ -138,12 +138,12 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      * Ask user for the project name
      */
     function createProject() {
-        const projectName = app.getArgument('projectName');
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
         app.ask(`Creating Project - ${projectName} now, please confirm`);
     }
 
     function createProjectYes() {
-        const projectName = app.getArgument('projectName');
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
         const description = app.getArgument('description');
 
         if (projectName) {
@@ -177,7 +177,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      * User Project Check in
      */
     function checkInProject() {
-        const projectName = app.getArgument('projectName');
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
         const description = app.getArgument('description');
 
         let userCheckIn = db.ref('checkIn/' + userId);
@@ -266,7 +266,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      * List the first 30 user logs
      */
     function allLogs() {
-        const projectName = app.getArgument('projectName');
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
         let userLogs = db.ref('logs/' + userId);
 
         if (projectName) {
@@ -422,6 +422,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             console.log(minutes);
 
             app.tell(`Done. The new default session time out is now set to ${newDefaultTime} hours.`);
+        } else {
+            app.ask(`Sorry! can you please repeat that.`)
         }
     }
 

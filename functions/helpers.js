@@ -26,7 +26,9 @@ function timeToTTS(checkInTime, checkOutTime) {
 }
 
 /**
- *
+ * Method to convert minutes to hours
+ * @param min
+ * @returns {string} - ex: 8.0
  */
 function convertMinToHrs(min) {
     let hours = Math.trunc(min / 60);
@@ -34,7 +36,16 @@ function convertMinToHrs(min) {
     return (hours + '.' + minutes);
 }
 
+function toTitleCase(string) {
+    if (!string) return '';
+
+    return string.replace(/\w\S*/g, (text) => {
+        return text.charAt(0).toUpperCase() + text.substr(1).toLowerCase();
+    });
+}
+
 module.exports = {
     timeToTTS,
-    convertMinToHrs
+    convertMinToHrs,
+    toTitleCase
 };

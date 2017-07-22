@@ -125,7 +125,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         } else {
             let promise = user.set({userId: userId, defaultCheckOutTime: 480});
 
-            app.tell(`No worries, say "Create a Project", to create a new Project.`);
+            app.ask(`No worries, say "Create a Project", to create a new Project.`);
         }
     }
 
@@ -373,7 +373,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .addItems(items)
                     );
                 } else {
-                    app.tell(`Sorry! You don't have any logs recorded yet. Get started by saying "Log me in for project name"!`)
+                    app.ask(`Sorry! You don't have any logs recorded yet. Get started by saying "Log me in for project name"!`)
                 }
             });
 
@@ -442,7 +442,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 projectSnapshot.forEach((childLogSnapshot) => {
                     title = childLogSnapshot.val().projectName;
                     description = childLogSnapshot.val().description;
-                    createdOn = new Date(childLogSnapshot.val().createdAt).toDateString();
+                    createdOn = moment(childLogSnapshot.val().createdAt).format('DD MMM YYYY');
                 });
                 app.ask(app.buildRichResponse()
                     .addSimpleResponse(`Here you go! You have 1 project available`)

@@ -118,7 +118,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         let user = db.ref('users/' + userId);
         if (app.isPermissionGranted()) {
             let displayName = app.getUserName().displayName;
-            console.log(displayName);
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
             app.ask(`Next, ${displayName}, say "Create a Project", to create a new Project.`);
@@ -485,7 +484,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         createdOn = moment(childLogSnapshot.val().createdAt).format('DD MMM YYYY');
                     });
                     app.ask(app.buildRichResponse()
-                        .addSimpleResponse(`Here you go! You have 1 project available`)
+                        .addSimpleResponse(`Here you go! ${title} is the only project available`)
                         .addSuggestions(
                             ['Create a project', 'Check me in'])
                         .addBasicCard(app.buildBasicCard(`${description}`)

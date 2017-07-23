@@ -391,7 +391,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             userLogs.child(logKey).once('value').then((logSnapshot) => {
                 const projectName = logSnapshot.val().projectName;
                 const description = logSnapshot.val().description;
-                const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+                let timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
                 app.ask(app.buildRichResponse()
                     .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)

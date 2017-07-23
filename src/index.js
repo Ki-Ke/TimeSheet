@@ -19,7 +19,12 @@ import ReactDOM from 'react-dom';
 
 import Main from './Main';
 import '../node_modules/firebaseui/dist/firebaseui.css';
+import './styles/comming-soon.css';
 
+/**
+ * rendering the main react component
+ * this is the main app
+ */
 ReactDOM.render(
     <Main />,
     document.getElementById('app')

@@ -169,6 +169,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 }
             });
         } else {
+            console.error('createProjectYes(): Project name is undefined @ confirmation');
             app.tell('Sorry! something went wrong');
         }
     }
@@ -269,115 +270,116 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         const projectName = helpers.toTitleCase(app.getArgument('projectName'));
         let userLogs = db.ref('logs/' + userId);
 
-        if (projectName) {
-            let userProjects = db.ref('projects/' + userId);
-            userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((projectSnapshot) => {
-                // if project name exists
-                if (projectSnapshot.exists()) {
-                    userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
-                        let items = [];
+        getApplicationData().then((appData) => {
+            if (projectName) {
+                let userProjects = db.ref('projects/' + userId);
+                userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((projectSnapshot) => {
+                    // if project name exists
+                    if (projectSnapshot.exists()) {
+                        userLogs.orderByChild('projectName').equalTo(projectName).limitToFirst(30).once('value').then((logSnapshot) => {
+                            let items = [];
 
-                        if (logSnapshot.numChildren() === 1) {
-                            let index = 0;
-                            let title = '';
-                            let description = '';
-                            let timeToTTS = '';
-                            logSnapshot.forEach((childLogSnapshot) => {
-                                index++;
-                                title = childLogSnapshot.val().projectName;
-                                description = childLogSnapshot.val().description;
-                                timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
-                            });
-                            app.ask(app.buildRichResponse()
-                                .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
-                                .addSuggestions(
-                                    ['Create a project', 'List'])
-                                .addBasicCard(app.buildBasicCard(`${description}`)
-                                    .setSubtitle(`${timeToTTS}`)
-                                    .setTitle(title)
-                                    .addButton('More', 'https://kike.co.in/')
-                                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
-                            );
-                        } else if (logSnapshot.numChildren() > 1) {
-                            let index = 0;
-                            logSnapshot.forEach((childLogSnapshot) => {
-                                index++;
-                                let title = index + '. ' + childLogSnapshot.val().projectName;
-                                let timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
-                                items.push(app.buildOptionItem(childLogSnapshot.key)
-                                    .setTitle(title)
-                                    .setDescription(`Your work time for the project is ${timeToTTS}`)
-                                    .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                                )
-                            });
-                            app.askWithList(app.buildRichResponse()
-                                    .addSimpleResponse(`Here you go! You have ${items.length} logs available for the project ${projectName}`)
+                            if (logSnapshot.numChildren() === 1) {
+                                let index = 0;
+                                let title = '';
+                                let description = '';
+                                let timeToTTS = '';
+                                logSnapshot.forEach((childLogSnapshot) => {
+                                    index++;
+                                    title = childLogSnapshot.val().projectName;
+                                    description = childLogSnapshot.val().description;
+                                    timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                                });
+                                app.ask(app.buildRichResponse()
+                                    .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
                                     .addSuggestions(
-                                        ['Create a project', 'List']),
-                                app.buildList('All project list')
-                                    .addItems(items)
-                            );
-                        } else {
-                            app.ask(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
-                        }
-                    });
+                                        ['Log me in', 'Default time out', 'Switch'])
+                                    .addBasicCard(app.buildBasicCard(`${description}`)
+                                        .setSubtitle(`${timeToTTS}`)
+                                        .setTitle(title)
+                                        .addButton('More', appData.url)
+                                        .setImage(appData.image, appData.name))
+                                );
+                            } else if (logSnapshot.numChildren() > 1) {
+                                let index = 0;
+                                logSnapshot.forEach((childLogSnapshot) => {
+                                    index++;
+                                    let title = index + '. ' + childLogSnapshot.val().projectName;
+                                    let timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                                    items.push(app.buildOptionItem(childLogSnapshot.key)
+                                        .setTitle(title)
+                                        .setDescription(`Your work time for the project is ${timeToTTS}`)
+                                        .setImage(appData.image, appData.name)
+                                    )
+                                });
+                                app.askWithList(app.buildRichResponse()
+                                        .addSimpleResponse(`Here you go! You have ${items.length} logs available for the project ${projectName}`)
+                                        .addSuggestions(
+                                            ['Log me in', 'Default time out', 'Switch']),
+                                    app.buildList('All project list')
+                                        .addItems(items)
+                                );
+                            } else {
+                                app.ask(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
+                            }
+                        });
 
-                } else {
-                    app.ask(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
-                }
-            });
+                    } else {
+                        app.ask(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
+                    }
+                });
 
-        } else {
+            } else {
 
-            userLogs.orderByChild('checkInDate').limitToFirst(30).once('value').then((logSnapshot) => {
-                let items = [];
+                userLogs.orderByChild('checkInDate').limitToFirst(30).once('value').then((logSnapshot) => {
+                    let items = [];
 
-                if (logSnapshot.numChildren() === 1) {
-                    let title = '';
-                    let description = '';
-                    let timeToTTS = '';
-                    logSnapshot.forEach((childLogSnapshot) => {
-                        title = childLogSnapshot.val().projectName;
-                        description = childLogSnapshot.val().description;
-                        timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
-                    });
-                    app.ask(app.buildRichResponse()
-                        .addSimpleResponse(`Here you go! You have 1 log available`)
-                        .addSuggestions(
-                            ['Create a project', 'List'])
-                        .addBasicCard(app.buildBasicCard(`${description}`)
-                            .setSubtitle(`${timeToTTS}`)
-                            .setTitle(title)
-                            .addButton('More', 'https://kike.co.in/')
-                            .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
-                    );
-                } else if (logSnapshot.numChildren() > 1) {
-                    let index = 0;
-                    logSnapshot.forEach((childLogSnapshot) => {
-                        index++;
-                        let title = index + '. ' + childLogSnapshot.val().projectName;
-                        let timeToTTS =  childLogSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
-
-                        items.push(app.buildOptionItem(childLogSnapshot.key)
-                            .setTitle(title)
-                            .setDescription(`Your work time for the project is ${timeToTTS}`)
-                            .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                        )
-                    });
-
-                    app.askWithList(app.buildRichResponse()
-                            .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
+                    if (logSnapshot.numChildren() === 1) {
+                        let title = '';
+                        let description = '';
+                        let timeToTTS = '';
+                        logSnapshot.forEach((childLogSnapshot) => {
+                            title = childLogSnapshot.val().projectName;
+                            description = childLogSnapshot.val().description;
+                            timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                        });
+                        app.ask(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have 1 log available`)
                             .addSuggestions(
-                                ['Create a project', 'List']),
-                        app.buildList('All project list')
-                            .addItems(items)
-                    );
-                } else {
-                    app.ask(`Sorry! You don't have any logs recorded yet. Get started by saying "Log me in for project name"!`)
-                }
-            });
+                                ['Create a project', 'List', 'Log me in'])
+                            .addBasicCard(app.buildBasicCard(`${description}`)
+                                .setSubtitle(`${timeToTTS}`)
+                                .setTitle(title)
+                                .addButton('More', appData.url)
+                                .setImage(appData.image, appData.name))
+                        );
+                    } else if (logSnapshot.numChildren() > 1) {
+                        let index = 0;
+                        logSnapshot.forEach((childLogSnapshot) => {
+                            index++;
+                            let title = index + '. ' + childLogSnapshot.val().projectName;
+                            let timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
-        }
+                            items.push(app.buildOptionItem(childLogSnapshot.key)
+                                .setTitle(title)
+                                .setDescription(`Your work time for the project is ${timeToTTS}`)
+                                .setImage(appData.image, appData.name)
+                            )
+                        });
+
+                        app.askWithList(app.buildRichResponse()
+                                .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
+                                .addSuggestions(
+                                    ['Create a project', 'List', 'Log me in',]),
+                            app.buildList('All project list')
+                                .addItems(items)
+                        );
+                    } else {
+                        app.ask(`Sorry! You don't have any logs recorded yet. Get started by saying "Log me in for project name"!`)
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -385,25 +387,56 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
      */
     function logSelected() {
         let userLogs = db.ref('logs/' + userId);
+        let projects = db.ref('projects/' + userId);
         const logKey = app.getSelectedOption();
 
         if (logKey) {
-            userLogs.child(logKey).once('value').then((logSnapshot) => {
-                const projectName = logSnapshot.val().projectName;
-                const description = logSnapshot.val().description;
-                const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+            getApplicationData().then((appData) => {
+                userLogs.child(logKey).once('value').then((logSnapshot) => {
+                    if (logSnapshot.exists()) {
+                        const projectName = logSnapshot.val().projectName;
+                        const description = logSnapshot.val().description;
+                        const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
 
-                app.ask(app.buildRichResponse()
-                    .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
-                    .addSuggestions(
-                        ['Create a project', 'List'])
-                    .addBasicCard(app.buildBasicCard(`${description}`)
-                        .setSubtitle(`${timeToTTS}`)
-                        .setTitle(projectName)
-                        .addButton('More', 'https://kike.co.in/')
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
-                );
+                        app.ask(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
+                            .addSuggestions(
+                                ['Log me in', 'Create a project', 'List'])
+                            .addBasicCard(app.buildBasicCard(`${description}`)
+                                .setSubtitle(`${timeToTTS}`)
+                                .setTitle(projectName)
+                                .addButton('More', appData.url)
+                                .setImage(appData.image, appData.name))
+                        );
+                    } else {
+                        projects.child(logKey).once('value').then((projectSnapshot) => {
+
+                            if (projectSnapshot.exists()) {
+                                const projectName = projectSnapshot.val().projectName;
+                                const description = projectSnapshot.val().description;
+                                const createdAt = moment(projectSnapshot.val().createdAt).format('DD MMM YYYY');
+
+                                app.ask(app.buildRichResponse()
+                                    .addSimpleResponse(`Here you go! The project ${projectName} was created on ${createdAt}`)
+                                    .addSuggestions(
+                                        ['Log me in', 'Create a project', 'List'])
+                                    .addBasicCard(app.buildBasicCard(`${description}`)
+                                        .setSubtitle(`${createdAt}`)
+                                        .setTitle(projectName)
+                                        .addButton('More', appData.url)
+                                        .setImage(appData.image, appData.name))
+                                );
+                            } else {
+                                console.error('logSelected(): Error with selected option with logSnapshot and projectSnapshot does not exists');
+                                app.tell('Sorry! Something went wrong! please try again later.');
+                            }
+                        });
+                    }
+                });
             });
+        } else {
+            console.error('logSelected(): Error with selected option with logKey undefined');
+            app.tell('Sorry! Something went wrong! please try again later.');
         }
     }
 
@@ -419,7 +452,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         if (newDefaultTime && (newDefaultTime * 60) > 0) {
             let minutes = parseInt(newDefaultTime) * 60;
             let promise = user.set({userId: userId, defaultCheckOutTime: minutes});
-            console.log(minutes);
 
             app.tell(`Done. The new default session time out is now set to ${newDefaultTime} hours.`);
         } else {
@@ -433,52 +465,60 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     function listProjects() {
         let userProjects = db.ref('projects/' + userId);
 
-        userProjects.orderByChild('createdAt').limitToFirst(30).once('value').then((projectSnapshot) => {
-            let items = [];
-            let index = 0;
+        getApplicationData().then((appData) => {
+            userProjects.orderByChild('createdAt').limitToFirst(30).once('value').then((projectSnapshot) => {
+                let items = [];
+                let index = 0;
 
-            if (projectSnapshot.numChildren() === 1) {
-                let title = '';
-                let description = '';
-                let createdOn = '';
-                projectSnapshot.forEach((childLogSnapshot) => {
-                    title = childLogSnapshot.val().projectName;
-                    description = childLogSnapshot.val().description;
-                    createdOn = moment(childLogSnapshot.val().createdAt).format('DD MMM YYYY');
-                });
-                app.ask(app.buildRichResponse()
-                    .addSimpleResponse(`Here you go! You have 1 project available`)
-                    .addSuggestions(
-                        ['Create a project', 'List'])
-                    .addBasicCard(app.buildBasicCard(`${description}`)
-                        .setSubtitle(`${createdOn}`)
-                        .setTitle(title)
-                        .addButton('More', 'https://kike.co.in/')
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", 'TimeSheet'))
-                );
-            } else if (projectSnapshot.numChildren() > 1) {
-                projectSnapshot.forEach((childLogSnapshot) => {
-                    index++;
-                    let title = index + '. ' + childLogSnapshot.val().projectName;
-                    let description = childLogSnapshot.val().description;
+                if (projectSnapshot.numChildren() <= 0) {
+                    app.ask(`Sorry! Haven't seen you create a project. Say, "Create a project", to create a new project`);
+                    return;
+                }
 
-                    items.push(app.buildOptionItem(childLogSnapshot.key)
-                        .setTitle(title)
-                        .setDescription(`${description}`)
-                        .setImage("https://lh3.googleusercontent.com/-VrPSpmjoFJk/WVE_rJOs68I/AAAAAAABT4k/EsAIwkQnRjUAmQZU_7p3MJDtLaymXSBowCMYCGAYYCw/h192-w192/TimeSheet_192.png?sz=64", appName)
-                    )
-                });
-
-                app.askWithList(app.buildRichResponse()
-                        .addSimpleResponse(`Here you go! You have created ${items.length} projects`)
+                if (projectSnapshot.numChildren() === 1) {
+                    let title = '';
+                    let description = '';
+                    let createdOn = '';
+                    projectSnapshot.forEach((childLogSnapshot) => {
+                        title = childLogSnapshot.val().projectName;
+                        description = childLogSnapshot.val().description;
+                        createdOn = moment(childLogSnapshot.val().createdAt).format('DD MMM YYYY');
+                    });
+                    app.ask(app.buildRichResponse()
+                        .addSimpleResponse(`Here you go! You have 1 project available`)
                         .addSuggestions(
-                            ['Create a project', 'Log me in']),
-                    app.buildList('Project lists')
-                        .addItems(items)
-                );
-            } else {
-                app.tell(" You don't have any projects yet. Start creating projects by saying 'Create a project!' ")
-            }
+                            ['Create a project', 'Check me in'])
+                        .addBasicCard(app.buildBasicCard(`${description}`)
+                            .setSubtitle(`${createdOn}`)
+                            .setTitle(title)
+                            .addButton('More', appData.url)
+                            .setImage(appData.image, appData.name))
+                    );
+                } else if (projectSnapshot.numChildren() > 1) {
+                    projectSnapshot.forEach((childLogSnapshot) => {
+                        index++;
+                        let title = index + '. ' + childLogSnapshot.val().projectName;
+                        let description = childLogSnapshot.val().description;
+
+                        items.push(app.buildOptionItem(childLogSnapshot.key)
+                            .setTitle(title)
+                            .setDescription(`${description}`)
+                            .setImage(appData.image, appData.name)
+                        )
+                    });
+
+                    app.askWithList(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have created ${items.length} projects`)
+                            .addSuggestions(
+                                ['Create a project', 'Log me in']),
+                        app.buildList('Project lists')
+                            .addItems(items)
+                    );
+                } else {
+                    app.tell(" You don't have any projects yet. Start creating projects by saying 'Create a project!' ")
+                }
+            });
+
         });
     }
 
@@ -563,6 +603,28 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             } else {
                 app.ask(`Oops! ${newProjectName} doesn't exist. Please say "create a project" to create a new one.`);
             }
+        });
+    }
+
+    function getApplicationData() {
+        return new Promise((resolve) => {
+            let appData = db.ref('appData/');
+            appData.once('value').then((appDataSnapshot) => {
+
+                if (appDataSnapshot.exists()) {
+                    resolve({
+                        url: appDataSnapshot.val().url,
+                        image: appDataSnapshot.val().image,
+                        name: appDataSnapshot.val().name
+                    });
+                } else {
+                    resolve({
+                        url: 'http://www.kike.co.in',
+                        image: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192.png?alt=media&token=aa52b6b7-0510-47a6-9c49-1a90eba7af86',
+                        name: 'Time Sheet'
+                    });
+                }
+            });
         });
     }
 

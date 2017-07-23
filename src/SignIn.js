@@ -16,6 +16,9 @@
  */
 import React from 'react';
 
+/**
+ * sign in component
+ */
 class SignIn extends React.Component {
 
     render() {

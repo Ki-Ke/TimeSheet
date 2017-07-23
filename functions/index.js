@@ -396,7 +396,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     if (logSnapshot.exists()) {
                         const projectName = logSnapshot.val().projectName;
                         const description = logSnapshot.val().description;
-                        const timeToTTS = helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+                        let timeToTTS =  logSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(logSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
 
                         app.ask(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
@@ -557,7 +557,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
                             });
 
-                            let oldProject = checkInSnapshot.val().projectName;
                             userCheckIn.update({checkInStatus: false});
 
                             const checkInTime = new Date().getTime();

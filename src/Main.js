@@ -20,6 +20,10 @@ import firebaseui from 'firebaseui';
 import SignIn from './SignIn';
 import HomePage from './HomePage';
 
+/**
+ * main config of the firebase app
+ * @type {{apiKey: string, authDomain: string, databaseURL: string, projectId: string, storageBucket: string, messagingSenderId: string}}
+ */
 let config = {
     apiKey: "AIzaSyCFuaaRmmctGcQMNvX2psjvy7-6scrZmQc",
     authDomain: "timesheet-81c18.firebaseapp.com",
@@ -31,26 +35,27 @@ let config = {
 firebase.initializeApp(config);
 let authUi = new firebaseui.auth.AuthUI(firebase.auth());
 
-const db = firebase.database();
-
 class Main extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {isLoggedIn: false, userObject: {}, userData: null};
+        this.state = {isLoggedIn: false, userObject: {}};
         let _this = this;
 
+        /**
+         * checking the user login state
+         */
         firebase.auth().onAuthStateChanged(function (user) {
             if (user) {
-                firebase.auth().currentUser.getToken(true).then(function (token) {
-                    console.log(token)
-                })
-                let data = '';
-                return _this.setState({isLoggedIn: true, userObject: user, userData: data});
+                _this.setState({isLoggedIn: true, userObject: user});
             }
         });
     };
 
+    /**
+     * setting the ui for firebase
+     * login
+     */
     componentDidMount() {
         var self = this;
         var uiConfig = {
@@ -62,6 +67,7 @@ class Main extends React.Component {
                     return false;
                 }
             },
+            'signInFlow': 'popup',
             'signInOptions': [
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID
             ]
@@ -69,19 +75,22 @@ class Main extends React.Component {
         authUi.start('#firebaseui-auth', uiConfig);
     };
 
+    /**
+     * reseting the authUi
+     */
     componentWillUnmount() {
         authUi.reset();
     };
 
+    /**
+     * if signed in shows home page
+     * else signin page
+     * @returns {XML}
+     */
     render() {
-        let dom;
-        if (this.state.isLoggedIn) {
-            dom = <HomePage user={this.state.userData}/>
-        } else {
-            dom = <SignIn />
-        }
+           let component = this.state.isLoggedIn ? <HomePage user={this.state.userObject}/> : <SignIn/>
         return (
-            <div>{dom}</div>
+            <div>{component}</div>
         );
     };
 }

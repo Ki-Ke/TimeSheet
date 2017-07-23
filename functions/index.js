@@ -517,7 +517,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
                             });
 
-                            let oldProject = checkInSnapshot.val().projectName;
                             userCheckIn.update({checkInStatus: false});
 
                             const checkInTime = new Date().getTime();

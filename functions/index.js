@@ -42,13 +42,40 @@ const LOG_SELECTED_INTENT = 'input.logSelected';
 const DEFAULT_CHECKOUT_TIME_INTENT = 'input.defaultCheckoutTime';
 const LIST_PROJECTS_INTENT = 'input.listProjects';
 const SWITCH_PROJECT_INTENT = 'input.switchProject';
+const HELP_INTENT = 'input.helpIntent';
 
 // Time Sheet constants
 const appName = 'Time Sheet';
 
+//Help list
+const helpList = [{
+    "key": "Create a project",
+    "value": "To create a project"
+}, {
+
+    "key": "Log me in",
+    "value": "To check in to project"
+}, {
+    "key": "Check out",
+    "value": "To check out from the project"
+}, {
+    "key": "List all projects",
+    "value": "To list your latest 30 projects"
+}, {
+    "key": "Switch",
+    "value": "To change the current logged in project to new one"
+}, {
+    "key": "Change default time out",
+    "value": "To change the defualt checkout time"
+}, {
+    "key": "Show my logs",
+    "value": "To list your latest 30 logs"
+}]
+
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new App({request, response});
     const userId = app.getUser().userId;
+    let hasScreen = app.hasSurfaceCapability(app.SurfaceCapabilities.SCREEN_OUTPUT);
 
     function welcome() {
         let user = db.ref('users/' + userId);
@@ -396,7 +423,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     if (logSnapshot.exists()) {
                         const projectName = logSnapshot.val().projectName;
                         const description = logSnapshot.val().description;
-                        let timeToTTS =  logSnapshot.val().checkOutTime === "" ?  helpers.timeToTTS(logSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+                        let timeToTTS = logSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(logSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
 
                         app.ask(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
@@ -627,6 +654,31 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
         });
     }
 
+    function help() {
+
+        if (hasScreen) {
+            getApplicationData().then((appData) => {
+                let items = [];
+                helpList.forEach((list) => {
+                    let title = list.key;
+                    let description = list.value;
+
+                    items.push(app.buildOptionItem(list.key)
+                        .setTitle(title)
+                        .setDescription(`${description}`)
+                        .setImage(appData.image, appData.name)
+                    )
+                });
+
+                app.askWithList(app.buildRichResponse()
+                        .addSimpleResponse(`Here is a list of things i can do. Click to initiate`),
+                    app.buildList('Help')
+                        .addItems(items)
+                );
+            });
+        }
+    }
+
     const actionMap = new Map();
     // Welcome intent
     actionMap.set(WELCOME_INTENT, welcome);
@@ -654,6 +706,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     // Display all logs
     actionMap.set(ALL_LOGS_INTENT, allLogs);
     actionMap.set(LOG_SELECTED_INTENT, logSelected);
+
+    //Help intent
+    actionMap.set(HELP_INTENT, help);
 
     app.handleRequest(actionMap);
 });

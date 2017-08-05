@@ -629,7 +629,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function help() {
         const randomHelp = helpers.getRandomHelp();
-        app.tell(`Just say "${randomHelp.key}" to ${randomHelp.value}`)
+        app.ask(`Just say "${randomHelp.key}" ${randomHelp.value}`)
     }
 
     const actionMap = new Map();

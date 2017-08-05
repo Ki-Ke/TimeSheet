@@ -25,7 +25,7 @@ const helpList = [{
     "value": "To check into a project"
 }, {
     "key": "Check out",
-    "value": "To check out from the project"
+    "value": "To check out from a project"
 }, {
     "key": "List projects",
     "value": "To list your latest 30 projects"

@@ -16,6 +16,30 @@
 'use strict';
 const timeToWords = require('humanize-duration');
 
+//Help list
+const helpList = [{
+    "key": "Create a project",
+    "value": "To create a project"
+}, {
+    "key": "Log me in",
+    "value": "To check into a project"
+}, {
+    "key": "Check out",
+    "value": "To check out from the project"
+}, {
+    "key": "List projects",
+    "value": "To list your latest 30 projects"
+}, {
+    "key": "Switch",
+    "value": "To change the current logged in project to new one"
+}, {
+    "key": "Change default time out",
+    "value": "To change the default checkout time"
+}, {
+    "key": "Show my logs",
+    "value": "To list your latest 30 logs"
+}];
+
 /**
  * Method to convert time to read able test
  * @param checkInTime - time in the form millisecond
@@ -44,8 +68,13 @@ function toTitleCase(string) {
     });
 }
 
+function getRandomHelp() {
+    return helpList[Math.floor(Math.random()*helpList.length)];
+}
+
 module.exports = {
     timeToTTS,
     convertMinToHrs,
-    toTitleCase
+    toTitleCase,
+    getRandomHelp
 };

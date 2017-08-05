@@ -19,25 +19,25 @@ const timeToWords = require('humanize-duration');
 //Help list
 const helpList = [{
     "key": "Create a project",
-    "value": "To create a project"
+    "value": "to create a project"
 }, {
     "key": "Log me in",
-    "value": "To check into a project"
+    "value": "to check into a project"
 }, {
     "key": "Check out",
-    "value": "To check out from a project"
+    "value": "to check out from a project"
 }, {
     "key": "List projects",
-    "value": "To list your latest 30 projects"
+    "value": "to list your latest 30 projects"
 }, {
     "key": "Switch",
-    "value": "To change the current logged in project to new one"
+    "value": "to change the current logged in project to new one"
 }, {
     "key": "Change default time out",
-    "value": "To change the default checkout time"
+    "value": "to change the default checkout time"
 }, {
     "key": "Show my logs",
-    "value": "To list your latest 30 logs"
+    "value": "to list your latest 30 logs"
 }];
 
 /**

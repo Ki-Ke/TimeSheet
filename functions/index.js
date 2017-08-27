@@ -72,7 +72,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 let userCheckInTime = moment(userCheckInSnapshot.val().checkInTime);
                                 let currentTime = moment(new Date().getTime());
                                 let duration = currentTime.diff(userCheckInTime, 'minutes');
-                                console.log(duration);
 
                                 if (duration < defaultCheckOutTime) {
                                     const projectName = userCheckInSnapshot.val().projectName;
@@ -87,7 +86,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                         let userLogs = db.ref('logs/' + userId);
 
                                         userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
-                                            const checkOutTime = new Date().getTime();
+                                            const checkInTime = new Date(userCheckInSnapshot.val().checkInTime);
+                                            const checkOutTime = checkInTime.setHours(defaultCheckOutTime);
                                             logSnapshot.forEach((childSnapshot) => {
                                                 userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
                                             });

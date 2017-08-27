@@ -288,7 +288,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                     index++;
                                     title = childLogSnapshot.val().projectName;
                                     description = childLogSnapshot.val().description;
-                                    timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                                    timeToTTS = !childLogSnapshot.val().checkOutTime ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                                 });
                                 app.ask(app.buildRichResponse()
                                     .addSimpleResponse(`Here you go! You have 1 log available for the project ${projectName}`)
@@ -305,7 +305,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 logSnapshot.forEach((childLogSnapshot) => {
                                     index++;
                                     let title = index + '. ' + childLogSnapshot.val().projectName;
-                                    let timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                                    let timeToTTS = !childLogSnapshot.val().checkOutTime ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                                     items.push(app.buildOptionItem(childLogSnapshot.key)
                                         .setTitle(title)
                                         .setDescription(`Your work time for the project is ${timeToTTS}`)
@@ -341,7 +341,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         logSnapshot.forEach((childLogSnapshot) => {
                             title = childLogSnapshot.val().projectName;
                             description = childLogSnapshot.val().description;
-                            timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                            timeToTTS = !childLogSnapshot.val().checkOutTime ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
                         });
                         app.ask(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have 1 log available`)
@@ -358,7 +358,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         logSnapshot.forEach((childLogSnapshot) => {
                             index++;
                             let title = index + '. ' + childLogSnapshot.val().projectName;
-                            let timeToTTS = childLogSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
+                            let timeToTTS = !childLogSnapshot.val().checkOutTime ? helpers.timeToTTS(childLogSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(childLogSnapshot.val().checkInTime, childLogSnapshot.val().checkOutTime);
 
                             items.push(app.buildOptionItem(childLogSnapshot.key)
                                 .setTitle(title)

@@ -44,8 +44,8 @@ const LIST_PROJECTS_INTENT = 'input.listProjects';
 const SWITCH_PROJECT_INTENT = 'input.switchProject';
 const HELP_INTENT = 'input.helpIntent';
 
-// Time Sheet constants
-const appName = 'Time Sheet';
+// Work Log constants
+const appName = 'Work Log';
 
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new App({request, response});
@@ -165,7 +165,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         description: description,
                         createdAt: new Date().getTime()
                     });
-                    app.ask(`Great! Project - ${projectName} is now created. You can start logging in right away! just say, Time sheet check in to ${projectName}`);
+                    app.ask(`Great! Project - ${projectName} is now created. You can start logging in right away! just say, ${appName} check in to ${projectName}`);
                 }
             });
         } else {
@@ -620,7 +620,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     resolve({
                         url: 'http://www.kike.co.in',
                         image: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192.png?alt=media&token=aa52b6b7-0510-47a6-9c49-1a90eba7af86',
-                        name: 'Time Sheet'
+                        name: appName
                     });
                 }
             });

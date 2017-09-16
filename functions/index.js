@@ -129,16 +129,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             const cardView = app.buildRichResponse()
                 .addSimpleResponse(prompt);
             const list = SSML_SPEAK_START
-                + `Create projects \n`
-                + BREAK_ONE_SEC
-                + `Log into a project \n`
-                + BREAK_ONE_SEC
-                + `List your latest 30 projects \n`
-                + BREAK_ONE_SEC
-                + `Switch between projects \n`
-                + BREAK_ONE_SEC
-                + `Change your default checkout time \n`
-                + BREAK_ONE_SEC
+                + `Create projects ${BREAK_ONE_SEC} \n`
+                + `Log into a project ${BREAK_ONE_SEC} \n`
+                + `List your latest 30 projects ${BREAK_ONE_SEC} \n`
+                + `Switch between projects ${BREAK_ONE_SEC} \n`
+                + `Change your default checkout time ${BREAK_ONE_SEC} \n`
                 + `List your latest 30 logs`
                 + SSML_SPEAK_END;
             cardView.addSimpleResponse(list);

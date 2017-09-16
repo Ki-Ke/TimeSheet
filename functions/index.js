@@ -44,6 +44,11 @@ const LIST_PROJECTS_INTENT = 'input.listProjects';
 const SWITCH_PROJECT_INTENT = 'input.switchProject';
 const HELP_INTENT = 'input.helpIntent';
 
+const SSML_SPEAK_START = '<speak>';
+const SSML_SPEAK_END = '</speak>';
+const BREAK_ONE_SEC = '<break time="1s" />';
+const BREAK_TWO_SEC = '<break time="2s" />';
+
 // Work Log constants
 const appName = 'Work Log';
 
@@ -124,8 +129,22 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             const prompt = `Next, ${displayName}, here are the things you can do.`;
             const cardView = app.buildRichResponse()
                 .addSimpleResponse(prompt);
-            cardView.addSimpleResponse(`Create projects, Log into a project, List your latest 30 projects,
-            Switch between projects, Change your default checkout time, List your latest 30 logs`);
+            const list = SSML_SPEAK_START
+                + `Next, ${displayName}, here are the things you can do.`
+                + BREAK_TWO_SEC
+                + `Create projects`
+                + BREAK_ONE_SEC
+                + `Log into a project`
+                + BREAK_ONE_SEC
+                + `List your latest 30 projects`
+                + BREAK_ONE_SEC
+                + `Switch between projects`
+                + BREAK_ONE_SEC
+                + `Change your default checkout time`
+                + BREAK_ONE_SEC
+                + `List your latest 30 logs`
+                + SSML_SPEAK_END;
+            cardView.addSimpleResponse(list);
             app.ask(cardView);
         } else {
             user.once('value').then((snapshot) => {

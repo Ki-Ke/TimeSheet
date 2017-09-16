@@ -47,7 +47,6 @@ const HELP_INTENT = 'input.helpIntent';
 const SSML_SPEAK_START = '<speak>';
 const SSML_SPEAK_END = '</speak>';
 const BREAK_ONE_SEC = '<break time="1s" />';
-const BREAK_TWO_SEC = '<break time="2s" />';
 
 // Work Log constants
 const appName = 'Work Log';
@@ -130,8 +129,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             const cardView = app.buildRichResponse()
                 .addSimpleResponse(prompt);
             const list = SSML_SPEAK_START
-                + `Next, ${displayName}, here are the things you can do.`
-                + BREAK_TWO_SEC
                 + `Create projects`
                 + BREAK_ONE_SEC
                 + `Log into a project`

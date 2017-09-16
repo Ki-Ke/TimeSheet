@@ -123,9 +123,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
             app.ask(`Next, ${displayName}, say "Create a Project", to create a new Project.`);
         } else {
-            let promise = user.set({userId: userId, defaultCheckOutTime: 480});
-
-            app.ask(`No worries, say "Create a Project", to create a new Project.`);
+            user.once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    app.ask(`No worries, say "Create a Project", to create a new Project.`);
+                } else {
+                    let promise = user.set({userId: userId, defaultCheckOutTime: 480});
+                    app.ask(`No worries, say "Create a Project", to create a new Project.`);
+                }
+            });
         }
     }
 

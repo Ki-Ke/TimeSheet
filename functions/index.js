@@ -87,7 +87,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                                         userLogs.orderByChild('checkOutTime').equalTo('').once('value').then((logSnapshot) => {
                                             const checkInTime = new Date(userCheckInSnapshot.val().checkInTime);
-                                            const checkOutTime = checkInTime.setHours(defaultCheckOutTime);
+                                            const checkOutTime = checkInTime.setMinutes(defaultCheckOutTime);
                                             logSnapshot.forEach((childSnapshot) => {
                                                 userLogs.child(childSnapshot.key).update({checkOutTime: checkOutTime});
                                             });
@@ -121,7 +121,16 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             let displayName = app.getUserName().displayName;
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
-            app.ask(`Next, ${displayName}, say "Create a Project", to create a new Project.`);
+            const prompt = `Next, ${displayName}, welcome to Work Log. here are the things you can do.`;
+            const cardView = app.buildRichResponse()
+                .addSimpleResponse(prompt);
+            cardView.addSimpleResponse(`To create a project just say "Create a project"`);
+            cardView.addSimpleResponse(`To check into a project just say "Log me in"`);
+            cardView.addSimpleResponse(`To list your latest 30 projects just say "List projects"`);
+            cardView.addSimpleResponse(`To switch between projects just say "Switch"`);
+            cardView.addSimpleResponse(`To change your default checkout time just say "Change default time out"`);
+            cardView.addSimpleResponse(`To list your latest 30 logs just say "Show my logs"`);
+            app.ask(cardView);
         } else {
             user.once('value').then((snapshot) => {
                 if (snapshot.exists()) {

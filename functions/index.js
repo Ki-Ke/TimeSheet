@@ -121,15 +121,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             let displayName = app.getUserName().displayName;
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
-            const prompt = `Next, ${displayName}, welcome to Work Log. here are the things you can do.`;
+            const prompt = `Next, ${displayName}, here are the things you can do.`;
             const cardView = app.buildRichResponse()
                 .addSimpleResponse(prompt);
-            cardView.addSimpleResponse(`To create a project just say "Create a project"`);
-            cardView.addSimpleResponse(`To check into a project just say "Log me in"`);
-            cardView.addSimpleResponse(`To list your latest 30 projects just say "List projects"`);
-            cardView.addSimpleResponse(`To switch between projects just say "Switch"`);
-            cardView.addSimpleResponse(`To change your default checkout time just say "Change default time out"`);
-            cardView.addSimpleResponse(`To list your latest 30 logs just say "Show my logs"`);
+            cardView.addSimpleResponse(`Create projects, Log into a project, List your latest 30 projects,
+            Switch between projects, Change your default checkout time, List your latest 30 logs`);
             app.ask(cardView);
         } else {
             let promise = user.set({userId: userId, defaultCheckOutTime: 480});

@@ -46,6 +46,7 @@ const HELP_INTENT = 'input.helpIntent';
 
 const SSML_SPEAK_START = '<speak>';
 const SSML_SPEAK_END = '</speak>';
+const BREAK = '<break time="1s" />';
 
 // Work Log constants
 const appName = 'Work Log';
@@ -124,18 +125,24 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             let displayName = app.getUserName().displayName;
             let promise = user.set({userId: userId, userName: displayName, defaultCheckOutTime: 480});
 
-            const prompt = `Next, ${displayName}, here are the things you can do:`;
+            const prompt = SSML_SPEAK_START
+                + `Next, ${displayName}, here are the things you can do: \n`
+                + `\n`
+                + BREAK
+                + `Create projects \n`
+                + BREAK
+                + `Log into a project \n`
+                + BREAK
+                + `List your latest 30 projects \n`
+                + BREAK
+                + `Switch between projects \n`
+                + BREAK
+                + `Change your default checkout time \n`
+                + BREAK
+                + `List your latest 30 logs \n`
+                + SSML_SPEAK_END;
             const cardView = app.buildRichResponse()
                 .addSimpleResponse(prompt);
-            const list = SSML_SPEAK_START
-                + `Create projects. \n`
-                + `Log into a project. \n`
-                + `List your latest 30 projects. \n`
-                + `Switch between projects. \n`
-                + `Change your default checkout time. \n`
-                + `List your latest 30 logs. \n`
-                + SSML_SPEAK_END;
-            cardView.addSimpleResponse(list);
             app.ask(cardView);
         } else {
             user.once('value').then((snapshot) => {

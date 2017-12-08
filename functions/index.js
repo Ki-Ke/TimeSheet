@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  Copyright 2017 KiKe. All Rights Reserved.
 
@@ -26,7 +27,7 @@ const helpers = require('./helpers');
 
 firebase.initializeApp({
     credential: firebase.credential.applicationDefault(),
-    databaseURL: "https://timesheet-81c18.firebaseio.com"
+    databaseURL: 'https://timesheet-81c18.firebaseio.com'
 });
 const db = firebase.database();
 
@@ -43,6 +44,8 @@ const DEFAULT_CHECKOUT_TIME_INTENT = 'input.defaultCheckoutTime';
 const LIST_PROJECTS_INTENT = 'input.listProjects';
 const SWITCH_PROJECT_INTENT = 'input.switchProject';
 const HELP_INTENT = 'input.helpIntent';
+const DELETE_PROJECT = 'input.deleteProject';
+const DELETE_PROJECT_YES = 'input.deleteProjectYes';
 
 const SSML_SPEAK_START = '<speak>';
 const SSML_SPEAK_END = '</speak>';
@@ -191,7 +194,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             });
         } else {
             console.error('createProjectYes(): Project name is undefined @ confirmation');
-            app.tell('Sorry! something went wrong');
+            app.tell('Sorry! something went wrong. Please try again later');
         }
     }
 
@@ -240,7 +243,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             checkInDate: date,
                             checkInTime: checkInTime,
                             description: description,
-                            checkOutTime: ""
+                            checkOutTime: ''
                         });
 
                         app.tell(`Great! You have been successfully checked in to ${projectName}.`);
@@ -331,22 +334,20 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                         .setTitle(title)
                                         .setDescription(`Your work time for the project is ${timeToTTS}`)
                                         .setImage(appData.image, appData.name)
-                                    )
+                                    );
                                 });
                                 app.askWithList(app.buildRichResponse()
                                         .addSimpleResponse(`Here you go! You have ${items.length} logs available for the project ${projectName}`)
-                                        .addSuggestions(
-                                            ['Log me in', 'Default time out', 'Switch']),
-                                    app.buildList('All project list')
-                                        .addItems(items)
+                                        .addSuggestions(['Log me in', 'Default time out', 'Switch']),
+                                    app.buildList('All project list').addItems(items)
                                 );
                             } else {
-                                app.ask(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`)
+                                app.ask(`Sorry! You don't have any logs for the project name ${projectName}. Just say "Log me in for ${projectName}" to get started!`);
                             }
                         });
 
                     } else {
-                        app.ask(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`)
+                        app.ask(`Sorry! You don't have a project with the name ${projectName}. Just say "create a project" to get started!`);
                     }
                 });
 
@@ -385,13 +386,12 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 .setTitle(title)
                                 .setDescription(`Your work time for the project is ${timeToTTS}`)
                                 .setImage(appData.image, appData.name)
-                            )
+                            );
                         });
 
                         app.askWithList(app.buildRichResponse()
                                 .addSimpleResponse(`Here you go! You have ${items.length} logs available`)
-                                .addSuggestions(
-                                    ['Create a project', 'List', 'Log me in',]),
+                                .addSuggestions(['Create a project', 'List', 'Log me in']),
                             app.buildList('All project list')
                                 .addItems(items)
                         );
@@ -417,7 +417,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     if (logSnapshot.exists()) {
                         const projectName = logSnapshot.val().projectName;
                         const description = logSnapshot.val().description;
-                        let timeToTTS = logSnapshot.val().checkOutTime === "" ? helpers.timeToTTS(logSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
+                        let timeToTTS = logSnapshot.val().checkOutTime === '' ? helpers.timeToTTS(logSnapshot.val().checkInTime, new Date().getTime()) : helpers.timeToTTS(logSnapshot.val().checkInTime, logSnapshot.val().checkOutTime);
 
                         app.ask(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
@@ -476,7 +476,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
             app.tell(`Done. The new default session time out is now set to ${newDefaultTime} hours.`);
         } else {
-            app.ask(`Sorry! can you please repeat that.`)
+            app.ask(`Sorry! can you please repeat that.`);
         }
     }
 
@@ -525,7 +525,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .setTitle(title)
                             .setDescription(`${description}`)
                             .setImage(appData.image, appData.name)
-                        )
+                        );
                     });
 
                     app.askWithList(app.buildRichResponse()
@@ -536,7 +536,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .addItems(items)
                     );
                 } else {
-                    app.tell(" You don't have any projects yet. Start creating projects by saying 'Create a project!' ")
+                    app.tell(` You don't have any projects yet. Start creating projects by saying 'Create a project!' `)
                 }
             });
 
@@ -594,7 +594,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 checkInDate: date,
                                 checkInTime: checkInTime,
                                 description: newDescription,
-                                checkOutTime: ""
+                                checkOutTime: ''
                             });
 
                             app.tell(`Great! Switch successful. You are now clocked in to ${newProjectName}.`);
@@ -615,7 +615,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             checkInDate: date,
                             checkInTime: checkInTime,
                             description: newDescription,
-                            checkOutTime: ""
+                            checkOutTime: ''
                         });
                         app.tell(`You have been successfully checked in to ${newProjectName}.`);
                     }
@@ -650,7 +650,68 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     function help() {
         const randomHelp = helpers.getRandomHelp();
-        app.ask(`Just say "${randomHelp.key}" ${randomHelp.value}`)
+        app.ask(`Just say "${randomHelp.key}" ${randomHelp.value}`);
+    }
+
+    /**
+     * Method to delete projects
+     */
+    function deleteProject() {
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
+
+        if (projectName) {
+            let userProjects = db.ref('projects/' + userId);
+
+            userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((snapshot) => {
+                let projectKey;
+                snapshot.forEach((childSnapshot) => {
+                    if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+                        projectKey = childSnapshot.key;
+                    }
+                });
+
+                if (projectKey) {
+                    userProjects.child(projectKey).remove()
+                        .then(() => app.ask(`Are you sure you want to delete "${projectName}"`))
+                        .catch(() => app.tell(`There was some issue while processing your request. please try again later`));
+                } else {
+                    app.tell(`Sorry! We couldn't find any project with the name ${projectName}`);
+                }
+
+            });
+        } else {
+            console.error('deleteProject(): Project name is undefined while delete');
+            app.tell('Sorry! something went wrong. Please try again later');
+        }
+    }
+    
+    function deleteProjectYes() {
+        const projectName = helpers.toTitleCase(app.getArgument('projectName'));
+
+        if (projectName) {
+            let userProjects = db.ref('projects/' + userId);
+
+            userProjects.orderByChild('projectName').equalTo(projectName).once('value').then((snapshot) => {
+                let projectKey;
+                snapshot.forEach((childSnapshot) => {
+                    if (childSnapshot.val().projectName.toUpperCase() === projectName.toUpperCase()) {
+                        projectKey = childSnapshot.key;
+                    }
+                });
+
+                if (projectKey) {
+                    userProjects.child(projectKey).remove()
+                        .then(() => app.tell(`The project ${projectName} has been successfully deleted.`))
+                        .catch(() => app.tell(`There was some issue while processing your request. please try again later`));
+                } else {
+                    app.tell(`Sorry! We couldn't find any project with the name ${projectName}`);
+                }
+
+            });
+        } else {
+            console.error('deleteProjectYes(): Project name is undefined while delete');
+            app.tell('Sorry! something went wrong. Please try again later');
+        }
     }
 
     const actionMap = new Map();
@@ -683,6 +744,10 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     //Help intent
     actionMap.set(HELP_INTENT, help);
+
+    // Delete project
+    actionMap.set(DELETE_PROJECT, deleteProject);
+    actionMap.set(DELETE_PROJECT_YES, deleteProjectYes);
 
     app.handleRequest(actionMap);
 });

@@ -16,7 +16,7 @@
  **/
 'use strict';
 
-const App = require('actions-on-google').ApiAiApp;
+const { DialogflowApp } = require('actions-on-google');
 const functions = require('firebase-functions');
 const firebase = require('firebase-admin');
 
@@ -55,7 +55,7 @@ const BREAK_ONE_SEC = '<break time="1s" />';
 const appName = 'Work Log';
 
 exports.timeSheet = functions.https.onRequest((request, response) => {
-    const app = new App({request, response});
+    const app = new DialogflowApp({request, response});
     const userId = app.getUser().userId;
 
     function welcome() {

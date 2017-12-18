@@ -57,6 +57,7 @@ const appName = 'Work Log';
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new DialogflowApp({request, response});
     const userId = app.getUser().userId;
+    console.log(request);
 
     function welcome() {
         let user = db.ref('users/' + userId);
@@ -671,9 +672,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 });
 
                 if (projectKey) {
-                    userProjects.child(projectKey).remove()
-                        .then(() => app.ask(`Are you sure you want to delete "${projectName}"`))
-                        .catch(() => app.tell(`There was some issue while processing your request. please try again later`));
+                    app.ask(`Are you sure you want to delete "${projectName}"`)
                 } else {
                     app.tell(`Sorry! We couldn't find any project with the name ${projectName}`);
                 }

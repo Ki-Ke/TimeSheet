@@ -57,7 +57,6 @@ const appName = 'Work Log';
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new DialogflowApp({request, response});
     const userId = app.getUser().userId;
-    console.log(request);
 
     function welcome() {
         let user = db.ref('users/' + userId);

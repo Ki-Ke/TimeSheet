@@ -717,13 +717,11 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
         user.once('value').then((snapshot) => {
             if (snapshot.exists()) {
-
                 let userLogs = db.ref('logs/' + userId);
                 userLogs.orderByChild('checkInTime').once('value').then((logSnapshot) => {
-                    let userLink = generateFile(logSnapshot);
+                    generateFile(logSnapshot, userId);
                 });
-
-                app.tell('Still working');
+                app.tell('Your report has been generated. Just say show my reports to list all you generated reports');
             }
         });
     }

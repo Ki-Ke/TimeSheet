@@ -25,12 +25,12 @@ import HomePage from './HomePage';
  * @type {{apiKey: string, authDomain: string, databaseURL: string, projectId: string, storageBucket: string, messagingSenderId: string}}
  */
 let config = {
-    apiKey: "AIzaSyCFuaaRmmctGcQMNvX2psjvy7-6scrZmQc",
+    apiKey: "",
     authDomain: "timesheet-81c18.firebaseapp.com",
     databaseURL: "https://timesheet-81c18.firebaseio.com",
     projectId: "timesheet-81c18",
     storageBucket: "timesheet-81c18.appspot.com",
-    messagingSenderId: "494017438997"
+    messagingSenderId: ""
 };
 firebase.initializeApp(config);
 let authUi = new firebaseui.auth.AuthUI(firebase.auth());

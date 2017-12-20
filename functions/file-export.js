@@ -16,35 +16,53 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const gcs = require('@google-cloud/storage')();
 
 // Third part packages
 const json2csv = require('json2csv');
-const fields = ['Check In Time', 'Check Out Time', 'Description', 'Project Name', 'Total Time (Hours)'];
+const fields = ['Check_In_Time', 'Check_Out_Time', 'Description', 'Project_Name', 'Total_Time_(Hours)'];
 
-function generateFile(logs) {
+const bucketName = 'user-exports';
+
+function generateFile(logs, userId) {
     let userLogs = [];
-    let fileName = new Date().getTime();
+    let tempDir = os.tmpdir();
+    let userReportPath = path.join(tempDir, userId);
+
+    if (!fs.existsSync(`${userReportPath}`)) {
+        fs.mkdirSync(`${userReportPath}`);
+    }
 
     logs.forEach((childSnapshot) => {
         let singleLog = {
-            checkInTime: childSnapshot.checkInTime,
-            checkOutTime: childSnapshot.checkOutTime,
-            description: childSnapshot.description,
-            projectName: childSnapshot.projectName,
-            totalTime: 10
+            "Check_In_Time": childSnapshot.val().checkInTime,
+            "Check_Out_Time": childSnapshot.val().checkOutTime,
+            "Description": childSnapshot.val().description,
+            "Project_Name": childSnapshot.val().projectName,
+            "Total_Time_(Hours)": 10
         };
         userLogs.push(singleLog)
     });
 
     let csv = json2csv({ data: userLogs, fields: fields});
 
-    fs.writeFile(fileName + '.csv', csv, function(err) {
+    fs.writeFile(`${userReportPath}/${userId}.csv`, csv, function(err) {
         if (err) {
-            return (err);
+            console.log(new Error(`Error: while generating report ${err}`));
         }
-        console.log('file saved');
 
-        return fileName
+        userLogs = [];
+        const bucket = gcs.bucket(bucketName);
+        let time = new Date().getTime();
+        let newFile = `${userId}_${time}.csv`;
+        bucket.upload(`${userReportPath}/${userId}.csv`, {destination: `${newFile}`}).then(() => {
+            console.log('User generated a report');
+            fs.unlinkSync(`${userReportPath}/${userId}.csv`);
+        }).catch(err => {
+            console.log(new Error(`Error: while uploading report ${err}`));
+        });
     });
 }
 

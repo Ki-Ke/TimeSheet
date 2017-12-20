@@ -424,7 +424,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         app.ask(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have worked on ${projectName} for ${timeToTTS}`)
                             .addSuggestions(
-                                ['Log me in', 'Create a project', 'List'])
+                                [`Log me in for ${projectName}`, 'Create a project', 'List'])
                             .addBasicCard(app.buildBasicCard(`${description}`)
                                 .setSubtitle(`${timeToTTS}`)
                                 .setTitle(projectName)
@@ -442,7 +442,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                 app.ask(app.buildRichResponse()
                                     .addSimpleResponse(`Here you go! The project ${projectName} was created on ${createdAt}`)
                                     .addSuggestions(
-                                        ['Log me in', 'Create a project', 'List'])
+                                        [`Log me in for ${projectName}`, 'Create a project', 'List'])
                                     .addBasicCard(app.buildBasicCard(`${description}`)
                                         .setSubtitle(`${createdAt}`)
                                         .setTitle(projectName)
@@ -510,7 +510,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     app.ask(app.buildRichResponse()
                         .addSimpleResponse(`Here you go! ${title} is the only project available`)
                         .addSuggestions(
-                            ['Create a project', 'Check me in'])
+                            ['Create a project', `Check in to ${title}`])
                         .addBasicCard(app.buildBasicCard(`${description}`)
                             .setSubtitle(`${createdOn}`)
                             .setTitle(title)
@@ -532,8 +532,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                     app.askWithList(app.buildRichResponse()
                             .addSimpleResponse(`Here you go! You have created ${items.length} projects`)
-                            .addSuggestions(
-                                ['Create a project', 'Log me in']),
+                            .addSuggestions(['Create a project', 'Log me in', 'Delete a project']),
                         app.buildList('Project lists')
                             .addItems(items)
                     );
@@ -656,7 +655,8 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     }
 
     /**
-     * Method to delete projects
+     * Method That check if the project is available to delete
+     * And prompt the user for confirmation
      */
     function deleteProject() {
         const projectName = helpers.toTitleCase(app.getArgument('projectName'));
@@ -673,7 +673,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 });
 
                 if (projectKey) {
-                    app.ask(`Are you sure you want to delete "${projectName}"`)
+                    app.ask(`Are you sure you want to delete "${projectName}"`);
                 } else {
                     app.tell(`Sorry! We couldn't find any project with the name ${projectName}`);
                 }
@@ -701,7 +701,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                 if (projectKey) {
                     userProjects.child(projectKey).remove()
-                        .then(() => app.tell(`The project ${projectName} has been successfully deleted.`))
+                        .then(() => app.tell(`The project "${projectName}" has been deleted successfully.`))
                         .catch(() => app.tell(`There was some issue while processing your request. please try again later`));
                 } else {
                     app.tell(`Sorry! We couldn't find any project with the name ${projectName}`);
@@ -758,7 +758,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     actionMap.set(ALL_LOGS_INTENT, allLogs);
     actionMap.set(LOG_SELECTED_INTENT, logSelected);
 
-    //Help intent
+    // Help intent
     actionMap.set(HELP_INTENT, help);
 
     // Delete project

@@ -6,6 +6,7 @@
     "firebase-admin": "~4.2.1",
     "firebase-functions": "^0.5.7",
     "humanize-duration": "^3.10.0",
+    "json2csv": "^3.11.5",
     "moment": "latest"
   },
   "private": true

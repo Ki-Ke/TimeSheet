@@ -24,6 +24,7 @@ const firebase = require('firebase-admin');
 const moment = require('moment');
 
 const helpers = require('./helpers');
+const generateFile = require('./file-export');
 
 firebase.initializeApp({
     credential: firebase.credential.applicationDefault(),
@@ -46,6 +47,7 @@ const SWITCH_PROJECT_INTENT = 'input.switchProject';
 const HELP_INTENT = 'input.helpIntent';
 const DELETE_PROJECT = 'input.deleteProject';
 const DELETE_PROJECT_YES = 'input.deleteProjectYes';
+const EXPORT_INTENT = 'input.exportIntent';
 
 const SSML_SPEAK_START = '<speak>';
 const SSML_SPEAK_END = '</speak>';
@@ -682,7 +684,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             app.tell('Sorry! something went wrong. Please try again later');
         }
     }
-    
+
     function deleteProjectYes() {
         const projectName = helpers.toTitleCase(app.getArgument('projectName'));
 
@@ -710,6 +712,22 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             console.error('deleteProjectYes(): Project name is undefined while delete');
             app.tell('Sorry! something went wrong. Please try again later');
         }
+    }
+
+    function fileExport() {
+        let user = db.ref('users/' + userId);
+
+        user.once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+
+                let userLogs = db.ref('logs/' + userId);
+                userLogs.orderByChild('checkInTime').once('value').then((logSnapshot) => {
+                    let userLink = generateFile(logSnapshot);
+                });
+
+                app.tell('Still working');
+            }
+        });
     }
 
     const actionMap = new Map();
@@ -746,6 +764,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     // Delete project
     actionMap.set(DELETE_PROJECT, deleteProject);
     actionMap.set(DELETE_PROJECT_YES, deleteProjectYes);
+
+    // Export intent
+    actionMap.set(EXPORT_INTENT, fileExport);
 
     app.handleRequest(actionMap);
 });

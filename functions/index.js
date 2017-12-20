@@ -89,8 +89,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
                                     app.ask(`Welcome back to ${appName}! You have logged in to ${projectName} for ${timeToTTS}`);
                                 } else {
-                                    const projectName = userCheckInSnapshot.val().projectName;
-
                                     if (userCheckInSnapshot.exists() && userCheckInSnapshot.val().checkInStatus) {
                                         let userLogs = db.ref('logs/' + userId);
 
@@ -641,7 +639,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 } else {
                     resolve({
                         url: 'http://www.kike.co.in',
-                        image: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192.png?alt=media&token=aa52b6b7-0510-47a6-9c49-1a90eba7af86',
+                        image: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192_new.png?alt=media&token=3d7647eb-104b-48a4-887b-419f9b6a8f7d',
                         name: appName
                     });
                 }

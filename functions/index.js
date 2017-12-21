@@ -333,7 +333,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                                     items.push(app.buildOptionItem(childLogSnapshot.key)
                                         .setTitle(title)
                                         .setDescription(`Your work time for the project is ${timeToTTS}`)
-                                        .setImage(appData.image, appData.name)
+                                        .setImage(appData.logo, appData.name)
                                     );
                                 });
                                 app.askWithList(app.buildRichResponse()
@@ -385,7 +385,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             items.push(app.buildOptionItem(childLogSnapshot.key)
                                 .setTitle(title)
                                 .setDescription(`Your work time for the project is ${timeToTTS}`)
-                                .setImage(appData.image, appData.name)
+                                .setImage(appData.logo, appData.name)
                             );
                         });
 
@@ -524,7 +524,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         items.push(app.buildOptionItem(childLogSnapshot.key)
                             .setTitle(title)
                             .setDescription(`${description}`)
-                            .setImage(appData.image, appData.name)
+                            .setImage(appData.logo, appData.name)
                         );
                     });
 
@@ -634,12 +634,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     resolve({
                         url: appDataSnapshot.val().url,
                         image: appDataSnapshot.val().image,
-                        name: appDataSnapshot.val().name
+                        name: appDataSnapshot.val().name,
+                        logo: appDataSnapshot.val().logo
                     });
                 } else {
                     resolve({
                         url: 'http://www.kike.co.in',
                         image: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192_new.png?alt=media&token=3d7647eb-104b-48a4-887b-419f9b6a8f7d',
+                        logo: 'https://firebasestorage.googleapis.com/v0/b/timesheet-81c18.appspot.com/o/TimeSheet_192.png?alt=media&token=aa52b6b7-0510-47a6-9c49-1a90eba7af86',
                         name: appName
                     });
                 }

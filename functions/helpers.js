@@ -72,9 +72,17 @@ function getRandomHelp() {
     return helpList[Math.floor(Math.random()*helpList.length)];
 }
 
+function getFullDate(date) {
+    if (!date) {
+        return 'N/A'
+    }
+    return `${new Date(date).getDate()}/${new Date(date).getDay()}/${new Date(date).getFullYear()}  ${new Date(date).getHours()}:${new Date(date).getMinutes()} ${(new Date(date).getHours()) > 12 ? 'PM' : 'AM'}`;
+}
+
 module.exports = {
     timeToTTS,
     convertMinToHrs,
     toTitleCase,
-    getRandomHelp
+    getRandomHelp,
+    getFullDate
 };

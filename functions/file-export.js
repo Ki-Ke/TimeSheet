@@ -19,10 +19,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const gcs = require('@google-cloud/storage')();
+const moment = require('moment');
 
 // Third part packages
 const json2csv = require('json2csv');
-const fields = ['Check_In_Time', 'Check_Out_Time', 'Description', 'Project_Name', 'Total_Time_(Hours)'];
+const fields = ['Check_In_Time', 'Check_Out_Time', 'Description', 'Project_Name', 'Total_Time'];
 
 const bucketName = 'user-exports';
 
@@ -36,17 +37,24 @@ function generateFile(logs, userId) {
     }
 
     logs.forEach((childSnapshot) => {
+        let totalTime;
+
+        if (childSnapshot.val().checkOutTime) {
+            let out = childSnapshot.val().checkOutTime;
+            let start = childSnapshot.val().checkOutTime;
+            totalTime = moment.duration(out.diff(start));
+        }
         let singleLog = {
             "Check_In_Time": childSnapshot.val().checkInTime,
             "Check_Out_Time": childSnapshot.val().checkOutTime,
             "Description": childSnapshot.val().description,
             "Project_Name": childSnapshot.val().projectName,
-            "Total_Time_(Hours)": 10
+            "Total_Time": totalTime ? (totalTime.asHours() > 1 ? totalTime.asHours() : totalTime.asMinutes() > 1 ? totalTime.asMinutes() : 'N/A') : 'N/A'
         };
         userLogs.push(singleLog)
     });
 
-    let csv = json2csv({ data: userLogs, fields: fields});
+    let csv = json2csv({ data: userLogs, fields: fields });
 
     fs.writeFile(`${userReportPath}/${userId}.csv`, csv, function(err) {
         if (err) {

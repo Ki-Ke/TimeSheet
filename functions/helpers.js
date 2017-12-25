@@ -15,6 +15,7 @@
  **/
 'use strict';
 const timeToWords = require('humanize-duration');
+const moment = require('moment');
 
 //Help list
 const helpList = [{
@@ -76,7 +77,7 @@ function getFullDate(date) {
     if (!date) {
         return 'N/A'
     }
-    return `${new Date(date).getDate()}/${new Date(date).getDay()}/${new Date(date).getFullYear()}  ${new Date(date).getHours()}:${new Date(date).getMinutes()} ${(new Date(date).getHours()) > 12 ? 'PM' : 'AM'}`;
+    return moment(date).format('MMMM Do YYYY, h:mm:ss a');
 }
 
 module.exports = {

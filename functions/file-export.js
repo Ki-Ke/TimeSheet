@@ -23,12 +23,12 @@ const moment = require('moment');
 
 // Third part packages
 const json2csv = require('json2csv');
-const { getFullDate } = require('./helpers');
+const { getFullDate, toTitleCase } = require('./helpers');
 const fields = ['Check_In_Time', 'Check_Out_Time', 'Description', 'Project_Name', 'Total_Time'];
 
 const bucketName = 'user-exports';
 
-function generateFile(logs, userId) {
+function generateFile(logs, userId, callback) {
     let userLogs = [];
     let tempDir = os.tmpdir();
     let userReportPath = path.join(tempDir, userId);
@@ -49,7 +49,7 @@ function generateFile(logs, userId) {
             "Check_In_Time": getFullDate(childSnapshot.val().checkInTime),
             "Check_Out_Time": getFullDate(childSnapshot.val().checkOutTime),
             "Description": childSnapshot.val().description || 'N/A',
-            "Project_Name": childSnapshot.val().projectName ? (childSnapshot.val().projectName).toUpperCase() : 'N/A',
+            "Project_Name": childSnapshot.val().projectName ? (toTitleCase(childSnapshot.val().projectName)) : 'N/A',
             "Total_Time": totalTime ? (totalTime.asHours() > 1 ? `${totalTime.asHours().toFixed(2)} Hrs` : totalTime.asMinutes() > 1 ? `${totalTime.asMinutes().toFixed(2)} Mins` : 'N/A') : 'N/A'
         };
         userLogs.push(singleLog)
@@ -69,6 +69,10 @@ function generateFile(logs, userId) {
         bucket.upload(`${userReportPath}/${userId}.csv`, {destination: `${newFile}`}).then(() => {
             console.log('User generated a report');
             fs.unlinkSync(`${userReportPath}/${userId}.csv`);
+            return callback({
+                file: newFile,
+                time: time
+            });
         }).catch(err => {
             console.log(new Error(`Error: while uploading report ${err}`));
         });

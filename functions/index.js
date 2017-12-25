@@ -48,6 +48,7 @@ const HELP_INTENT = 'input.helpIntent';
 const DELETE_PROJECT = 'input.deleteProject';
 const DELETE_PROJECT_YES = 'input.deleteProjectYes';
 const EXPORT_INTENT = 'input.exportIntent';
+const SHOW_REPORT_INTENT = 'input.showReportIntent';
 
 const SSML_SPEAK_START = '<speak>';
 const SSML_SPEAK_END = '</speak>';
@@ -55,6 +56,7 @@ const BREAK_ONE_SEC = '<break time="1s" />';
 
 // Work Log constants
 const appName = 'Work Log';
+const storageURL = 'https://storage.cloud.google.com/user-exports/';
 
 exports.timeSheet = functions.https.onRequest((request, response) => {
     const app = new DialogflowApp({request, response});
@@ -721,10 +723,69 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
             if (snapshot.exists()) {
                 let userLogs = db.ref('logs/' + userId);
                 userLogs.orderByChild('checkInTime').once('value').then((logSnapshot) => {
-                    generateFile(logSnapshot, userId);
+                    generateFile(logSnapshot, userId, (res) => {
+                        console.log('akon is coming');
+                        let reports = db.ref('reports/' + userId);
+                        reports.push(res);
+                    })
                 });
-                app.tell('Your report has been generated. Just say show my reports to list all your generated reports');
+                app.ask('Your report has been generated. Just say show my reports to list all your generated reports');
             }
+        });
+    }
+
+    function showReport() {
+        let reports = db.ref('reports/' + userId);
+        getApplicationData().then((appData) => {
+            reports.limitToFirst(30).once('value').then((reportsSnapshot) => {
+                let items = [];
+                let index = 0;
+
+                if (reportsSnapshot.numChildren() <= 0) {
+                    app.ask(`Sorry! Haven't seen you generate a report. Say, "Generate report", to create a new report`);
+                    return;
+                }
+
+                if (reportsSnapshot.numChildren() === 1) {
+                    let title = '';
+                    let file = '';
+                    let createdOn = '';
+                    reportsSnapshot.forEach((childReportSnapshot) => {
+                        file = `${storageURL}${childReportSnapshot.val().file}`
+                        title = `Generated on ${moment(childReportSnapshot.val().time).format('DD MMM YYYY')}`;
+                        createdOn = moment(childReportSnapshot.val().time).format('DD MMM YYYY');
+                    });
+                    app.ask(app.buildRichResponse()
+                        .addSimpleResponse(`Here you go!`)
+                        .addSuggestions(
+                            ['Generate report', `Check in to ${title}`])
+                        .addBasicCard(app.buildBasicCard('')
+                            .setSubtitle(`${createdOn}`)
+                            .setTitle(title)
+                            .addButton('Download', file)
+                            .setImage(appData.image, appData.name))
+                    );
+                } else if (reportsSnapshot.numChildren() > 1) {
+                    reportsSnapshot.forEach((childReportSnapshot) => {
+                        index++;
+                        let title = `${index}. Generated on ${moment(childReportSnapshot.val().time).format('DD MMM YYYY')}`;
+                        items.push(app.buildOptionItem(childReportSnapshot.key)
+                            .setTitle(title)
+                            .setImage(appData.logo, appData.name)
+                        );
+                    });
+
+                    app.askWithList(app.buildRichResponse()
+                            .addSimpleResponse(`Here you go! You have created ${items.length} reports`)
+                            .addSuggestions(['Generate report', 'Log me in', 'Delete a project']),
+                        app.buildList('Report lists')
+                            .addItems(items)
+                    );
+                } else {
+                    app.tell(`You don't have any generated reports yet. Start generating reports by saying 'Generate report!' `);
+                }
+            });
+
         });
     }
 
@@ -765,6 +826,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
 
     // Export intent
     actionMap.set(EXPORT_INTENT, fileExport);
+
+    // Show report intent
+    actionMap.set(SHOW_REPORT_INTENT, showReport);
 
     app.handleRequest(actionMap);
 });

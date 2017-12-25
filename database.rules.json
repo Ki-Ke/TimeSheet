@@ -9,7 +9,7 @@
     },
     "projects": {
       "$uid": {
-        ".indexOn": [".value", "projectName", "createdAt"]
+        ".indexOn": [".value", "projectName", "createdAt", "reports"]
       }
     }
   }

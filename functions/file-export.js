@@ -40,8 +40,8 @@ function generateFile(logs, userId) {
         let totalTime;
 
         if (childSnapshot.val().checkOutTime) {
-            let out = childSnapshot.val().checkOutTime;
-            let start = childSnapshot.val().checkOutTime;
+            let out = moment(childSnapshot.val().checkOutTime);
+            let start = moment(childSnapshot.val().checkOutTime);
             totalTime = moment.duration(out.diff(start));
         }
         let singleLog = {

@@ -723,7 +723,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                 userLogs.orderByChild('checkInTime').once('value').then((logSnapshot) => {
                     generateFile(logSnapshot, userId);
                 });
-                app.tell('Your report has been generated. Just say show my reports to list all you generated reports');
+                app.tell('Your report has been generated. Just say show my reports to list all your generated reports');
             }
         });
     }

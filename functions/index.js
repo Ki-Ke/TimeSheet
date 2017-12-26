@@ -737,9 +737,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     function showReport() {
         let reports = db.ref('reports/' + userId);
         getApplicationData().then((appData) => {
-            reports.limitToFirst(30).once('value').then((reportsSnapshot) => {
-                let items = [];
-                let index = 0;
+            reports.orderByChild('time').limitToFirst(1).once('value').then((reportsSnapshot) => {
 
                 if (reportsSnapshot.numChildren() <= 0) {
                     app.ask(`Sorry! Haven't seen you generate a report. Say, "Generate report", to create a new report`);
@@ -751,7 +749,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                     let file = '';
                     let createdOn = '';
                     reportsSnapshot.forEach((childReportSnapshot) => {
-                        file = `${storageURL}${childReportSnapshot.val().file}`
+                        file = `${storageURL}${childReportSnapshot.val().file}`;
                         title = `Generated on ${moment(childReportSnapshot.val().time).format('DD MMM YYYY')}`;
                         createdOn = moment(childReportSnapshot.val().time).format('DD MMM YYYY');
                     });
@@ -764,22 +762,6 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                             .setTitle(title)
                             .addButton('Download', file)
                             .setImage(appData.image, appData.name))
-                    );
-                } else if (reportsSnapshot.numChildren() > 1) {
-                    reportsSnapshot.forEach((childReportSnapshot) => {
-                        index++;
-                        let title = `${index}. Generated on ${moment(childReportSnapshot.val().time).format('DD MMM YYYY')}`;
-                        items.push(app.buildOptionItem(childReportSnapshot.key)
-                            .setTitle(title)
-                            .setImage(appData.logo, appData.name)
-                        );
-                    });
-
-                    app.askWithList(app.buildRichResponse()
-                            .addSimpleResponse(`Here you go! You have created ${items.length} reports`)
-                            .addSuggestions(['Generate report', 'Log me in', 'Delete a project']),
-                        app.buildList('Report lists')
-                            .addItems(items)
                     );
                 } else {
                     app.tell(`You don't have any generated reports yet. Start generating reports by saying 'Generate report!' `);

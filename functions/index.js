@@ -727,9 +727,9 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         console.log('akon is coming');
                         let reports = db.ref('reports/' + userId);
                         reports.push(res);
-                    })
+                    });
                 });
-                app.ask('Your report has been generated. Just say show my reports to list all your generated reports');
+                app.ask('Your report has been generated. Just say show my report to list your generated report');
             }
         });
     }
@@ -737,14 +737,14 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
     function showReport() {
         let reports = db.ref('reports/' + userId);
         getApplicationData().then((appData) => {
-            reports.orderByChild('time').limitToFirst(1).once('value').then((reportsSnapshot) => {
+            reports.orderByChild('time').limitToLast(1).once('value').then((reportsSnapshot) => {
 
                 if (reportsSnapshot.numChildren() <= 0) {
                     app.ask(`Sorry! Haven't seen you generate a report. Say, "Generate report", to create a new report`);
                     return;
                 }
 
-                if (reportsSnapshot.numChildren() === 1) {
+                if (reportsSnapshot.numChildren() >= 1) {
                     let title = '';
                     let file = '';
                     let createdOn = '';

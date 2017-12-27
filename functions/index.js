@@ -753,7 +753,7 @@ exports.timeSheet = functions.https.onRequest((request, response) => {
                         title = `Generated on ${moment(childReportSnapshot.val().time).format('DD MMM YYYY')}`;
                         createdOn = moment(childReportSnapshot.val().time).format('DD MMM YYYY');
                     });
-                    app.ask(app.buildRichResponse()
+                    app.tell(app.buildRichResponse()
                         .addSimpleResponse(`Here you go!`)
                         .addSuggestions(
                             ['Generate report', `Check in to ${title}`])
